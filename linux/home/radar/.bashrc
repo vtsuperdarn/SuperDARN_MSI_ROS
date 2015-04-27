@@ -1,4 +1,5 @@
 # .bashrc
+#Not the full bashrc file for the fhrlinux, but the ROS important parts copied here.
 
 # Source global definitions
 if [ -f /etc/bashrc ]; then
