@@ -1,5 +1,5 @@
 /* site.c
-   ====== 
+   ======
    Author R.J.Barnes
 */
 /*
@@ -54,13 +54,13 @@ void SiteFhwExit(int signum) {
   struct ROSMsg msg;
   switch(signum) {
     case 2:
-      if (debug) printf("SiteFhwExit: Sig %d: %d\n",signum,FHW_exit_flag); 
+      if (debug) printf("SiteFhwExit: Sig %d: %d\n",signum,FHW_exit_flag);
       cancel_count++;
       FHW_exit_flag=signum;
       if (cancel_count < 3 )
         break;
     case 0:
-      if (debug) printf("SiteFhwExit: Sig %d: %d\n",signum,FHW_exit_flag); 
+      if (debug) printf("SiteFhwExit: Sig %d: %d\n",signum,FHW_exit_flag);
       if(FHW_exit_flag!=0) {
         msg.type=QUIT;
         TCPIPMsgSend(sock, &msg, sizeof(struct ROSMsg));
@@ -74,11 +74,11 @@ void SiteFhwExit(int signum) {
           fflush(seqlog);
           fclose(seqlog);
           seqlog=NULL;
-        } 
+        }
         if(msglog!=NULL) {
           fclose(msglog);
           msglog=NULL;
-        } 
+        }
         if(f_diagnostic_ascii!=NULL) {
           fclose(f_diagnostic_ascii);
           f_diagnostic_ascii=NULL;
@@ -86,10 +86,10 @@ void SiteFhwExit(int signum) {
         if (samples !=NULL)
           ShMemFree((unsigned char *) samples,sharedmemory,IQBUFSIZE,1,shmemfd);
         exit(errno);
-      } 
+      }
       break;
     default:
-      if (debug) printf("SiteFhwExit: Sig %d: %d\n",signum,FHW_exit_flag); 
+      if (debug) printf("SiteFhwExit: Sig %d: %d\n",signum,FHW_exit_flag);
       if(FHW_exit_flag==0) {
         FHW_exit_flag=signum;
       }
@@ -106,11 +106,11 @@ void SiteFhwExit(int signum) {
           fflush(seqlog);
           fclose(seqlog);
           seqlog=NULL;
-        } 
+        }
         if(msglog!=NULL) {
           fclose(msglog);
           msglog=NULL;
-        } 
+        }
         if(f_diagnostic_ascii!=NULL) {
           fclose(f_diagnostic_ascii);
           f_diagnostic_ascii=NULL;
@@ -169,7 +169,7 @@ int SiteFhwStart(char *host) {
   if (debug) {
     fprintf(stderr,"SiteFhwStart: rxchn=%d\n",rxchn);
 
-  } 
+  }
 
 /* KTS added to adjust for day/night time */
 
@@ -195,26 +195,26 @@ int SiteFhwSetupRadar() {
   }
   fprintf(stderr,"Rnum: %d Cnum: %d\n",rnum,cnum);
   smsg.type=SET_RADAR_CHAN;
-  TCPIPMsgSend(sock, &smsg,sizeof(struct ROSMsg)); 
+  TCPIPMsgSend(sock, &smsg,sizeof(struct ROSMsg));
   temp32=rnum;
-  TCPIPMsgSend(sock, &temp32, sizeof(int32)); 
+  TCPIPMsgSend(sock, &temp32, sizeof(int32));
   temp32=cnum;
   TCPIPMsgSend(sock, &temp32, sizeof(int32));
-  TCPIPMsgRecv(sock, &rmsg, sizeof(struct ROSMsg)); 
+  TCPIPMsgRecv(sock, &rmsg, sizeof(struct ROSMsg));
   if (rmsg.status < 0) {
     fprintf(stderr,"Requested radar channel unavailable\nSleeping 1 second and exiting\n");
     sleep(1);
     SiteFhwExit(-1);
-  } 
+  }
   if (debug) {
     fprintf(stderr,"SET_RADAR_CHAN:type=%c\n",rmsg.type);
     fprintf(stderr,"SET_RADAR_CHAN:status=%d\n",rmsg.status);
   }
   smsg.type=QUERY_INI_SETTINGS;
   TCPIPMsgSend(sock, &smsg, sizeof(struct ROSMsg));
-  sprintf(ini_entry_name,"site_settings:ifmode");  
-  requested_entry_type='b';  
-  returned_entry_type=' ';  
+  sprintf(ini_entry_name,"site_settings:ifmode");
+  requested_entry_type='b';
+  returned_entry_type=' ';
   temp32=-1;
   ifmode=-1;
   data_length=strlen(ini_entry_name)+1;
@@ -225,7 +225,7 @@ int SiteFhwSetupRadar() {
   TCPIPMsgRecv(sock, &data_length, sizeof(int32));
   if((returned_entry_type==requested_entry_type)  ) {
     TCPIPMsgRecv(sock, &temp32, sizeof(int32));
-  } 
+  }
   TCPIPMsgRecv(sock, &rmsg, sizeof(struct ROSMsg));
   if (debug) {
     fprintf(stderr,"QUERY_INI_SETTINGS:type=%c\n",rmsg.type);
@@ -237,7 +237,7 @@ int SiteFhwSetupRadar() {
   if((rmsg.status) && (temp32>=0) ) ifmode=temp32;
   if((ifmode!=0) && (ifmode!=1)) {
     fprintf(stderr,"QUERY_INI_SETTINGS: Bad IFMODE)\n");
-    exit(0); 
+    exit(0);
   }
   smsg.type=GET_PARAMETERS;
   TCPIPMsgSend(sock, &smsg, sizeof(struct ROSMsg));
@@ -253,7 +253,7 @@ int SiteFhwSetupRadar() {
 
   samples=(int16 *)
     ShMemAlloc(sharedmemory,IQBUFSIZE,O_RDWR | O_CREAT,1,&shmemfd);
-  if(samples==NULL) { 
+  if(samples==NULL) {
     fprintf(stderr,"IQBuffer %s is Null\n",sharedmemory);
     SiteFhwExit(-1);
   }
@@ -283,7 +283,7 @@ int SiteFhwSetupRadar() {
       msglog=NULL;
   }
   msglog_dir = getenv("MSGLOG_DIR");
-  if(msglog_dir!=NULL) { 
+  if(msglog_dir!=NULL) {
     fprintf(stdout,"msglog dir: %s\n",msglog_dir);
     sprintf(msglog_name,"%s/msglog.fhw%s.%04d%02d%02d",msglog_dir,channame,tstruct.tm_year+1900,tstruct.tm_mon+1,tstruct.tm_mday);
     fprintf(stdout,"msglog filename: %s\n",msglog_name);
@@ -298,7 +298,7 @@ int SiteFhwSetupRadar() {
       seqlog=NULL;
   }
   seqlog_dir = getenv("SEQLOG_DIR");
-  if(seqlog_dir!=NULL) { 
+  if(seqlog_dir!=NULL) {
     fprintf(stdout,"seqlog dir: %s\n",seqlog_dir);
     sprintf(seqlog_name,"%s/seqlog.fhw%s.%04d%02d%02d",seqlog_dir,channame,tstruct.tm_year+1900,tstruct.tm_mon+1,tstruct.tm_mday);
     fprintf(stdout,"seqlog filename: %s\n",seqlog_name);
@@ -310,7 +310,7 @@ int SiteFhwSetupRadar() {
   return 0;
 }
 
- 
+
 int SiteFhwStartScan() {
   struct ROSMsg smsg,rmsg;
   smsg.type=SET_ACTIVE;
@@ -332,7 +332,7 @@ int SiteFhwStartIntt(int sec,int usec) {
     fprintf(stderr,"SiteFhwStartInt: start\n");
   }
   total_samples=tsgprm.samples+tsgprm.smdelay;
-  smsg.type=PING; 
+  smsg.type=PING;
   TCPIPMsgSend(sock, &smsg, sizeof(struct ROSMsg));
   TCPIPMsgRecv(sock, &rmsg, sizeof(struct ROSMsg));
   if (debug) {
@@ -340,7 +340,7 @@ int SiteFhwStartIntt(int sec,int usec) {
     fprintf(stderr,"PING:status=%d\n",rmsg.status);
   }
 
-  smsg.type=GET_PARAMETERS;  
+  smsg.type=GET_PARAMETERS;
   TCPIPMsgSend(sock, &smsg, sizeof(struct ROSMsg));
   TCPIPMsgRecv(sock, &rprm, sizeof(struct ControlPRM));
   TCPIPMsgRecv(sock, &rmsg, sizeof(struct ROSMsg));
@@ -349,13 +349,13 @@ int SiteFhwStartIntt(int sec,int usec) {
     fprintf(stderr,"GET_PARAMETERS:status=%d\n",rmsg.status);
   }
 
-  rprm.tbeam=bmnum;   
-  rprm.tfreq=12000;   
-  rprm.trise=5000;   
-  rprm.baseband_samplerate=((double)nbaud/(double)txpl)*1E6; 
-  rprm.filter_bandwidth=rprm.baseband_samplerate; 
+  rprm.tbeam=bmnum;
+  rprm.tfreq=12000;
+  rprm.trise=5000;
+  rprm.baseband_samplerate=((double)nbaud/(double)txpl)*1E6;
+  rprm.filter_bandwidth=rprm.baseband_samplerate;
   rprm.match_filter=1;
-  rprm.number_of_samples=total_samples+nbaud+10; 
+  rprm.number_of_samples=total_samples+nbaud+10;
   rprm.priority=cnum;
   rprm.buffer_index=0;
 
@@ -391,14 +391,14 @@ int SiteFhwFCLR(int stfreq,int edfreq) {
   SiteFhwExit(0);
 
   total_samples=tsgprm.samples+tsgprm.smdelay;
-  rprm.tbeam=bmnum;   
-  rprm.tfreq=tfreq;   
-  rprm.rfreq=tfreq;   
-  rprm.trise=5000;   
-  rprm.baseband_samplerate=((double)nbaud/(double)txpl)*1E6; 
-  rprm.filter_bandwidth=rprm.baseband_samplerate; 
+  rprm.tbeam=bmnum;
+  rprm.tfreq=tfreq;
+  rprm.rfreq=tfreq;
+  rprm.trise=5000;
+  rprm.baseband_samplerate=((double)nbaud/(double)txpl)*1E6;
+  rprm.filter_bandwidth=rprm.baseband_samplerate;
   rprm.match_filter=1;
-  rprm.number_of_samples=total_samples+nbaud+10; 
+  rprm.number_of_samples=total_samples+nbaud+10;
   rprm.priority=cnum;
   rprm.buffer_index=0;
 
@@ -411,10 +411,10 @@ int SiteFhwFCLR(int stfreq,int edfreq) {
     fprintf(stderr,"SET_PARAMETERS:status=%d\n",rmsg.status);
   }
 
-  fprm.start=stfreq; 
-  fprm.end=edfreq;  
-  fprm.nave=20;  
-  fprm.filter_bandwidth=250;  
+  fprm.start=stfreq;
+  fprm.end=edfreq;
+  fprm.nave=20;
+  fprm.filter_bandwidth=250;
 
   smsg.type=REQUEST_CLEAR_FREQ_SEARCH;
   TCPIPMsgSend(sock, &smsg, sizeof(struct ROSMsg));
@@ -427,9 +427,9 @@ int SiteFhwFCLR(int stfreq,int edfreq) {
 
   smsg.type=REQUEST_ASSIGNED_FREQ;
   TCPIPMsgSend(sock, &smsg, sizeof(struct ROSMsg));
-  TCPIPMsgRecv(sock,&tfreq, sizeof(int32)); 
-  TCPIPMsgRecv(sock,&noise, sizeof(float));  
-  TCPIPMsgRecv(sock,&rmsg, sizeof(struct ROSMsg)); 
+  TCPIPMsgRecv(sock,&tfreq, sizeof(int32));
+  TCPIPMsgRecv(sock,&noise, sizeof(float));
+  TCPIPMsgRecv(sock,&rmsg, sizeof(struct ROSMsg));
   if (debug) {
     fprintf(stderr,"REQUEST_ASSIGNED_FREQ:type=%c\n",rmsg.status);
     fprintf(stderr,"REQUEST_ASSIGNED_FREQ:status=%d\n",rmsg.status);
@@ -452,16 +452,16 @@ int SiteFhwTimeSeq(int *ptab) {
   if (tsgprm.pat !=NULL) free(tsgprm.pat);
   memset(&tsgprm,0,sizeof(struct TSGprm));
 
-  tsgprm.nrang=nrang;         
+  tsgprm.nrang=nrang;
   tsgprm.frang=frang;
-  tsgprm.rtoxmin=0;      
+  tsgprm.rtoxmin=0;
   tsgprm.stdelay=18+2;
   tsgprm.gort=1;
-  tsgprm.rsep=rsep;          
+  tsgprm.rsep=rsep;
   tsgprm.smsep=smsep;
-  tsgprm.txpl=txpl; 
+  tsgprm.txpl=txpl;
   tsgprm.mpinc=mpinc;
-  tsgprm.mppul=mppul; 
+  tsgprm.mppul=mppul;
   tsgprm.mlag=0;
   tsgprm.nbaud=nbaud;
   tsgprm.code=pcode;
@@ -678,13 +678,13 @@ int SiteFhwIntegrate(int (*lags)[2]) {
     seqatten[nave]=0;
     seqnoise[nave]=0;
     seqbadtr[nave].num=0;
-  
+
 
     tval=(tick.tv_sec+tick.tv_usec/1.0e6)-
          (tack.tv_sec+tack.tv_usec/1.0e6);
 
-    if (nave>0) tavg=tval/nave; 
-     
+    if (nave>0) tavg=tval/nave;
+
     tick.tv_sec+=floor(tavg);
     tick.tv_usec+=1.0e6*(tavg-floor(tavg));
 
@@ -695,16 +695,16 @@ int SiteFhwIntegrate(int (*lags)[2]) {
     }
 
 
-    rprm.tbeam=bmnum;   
-    rprm.tfreq=tfreq;   
-    rprm.rfreq=tfreq;   
-    rprm.trise=5000;   
-    rprm.baseband_samplerate=((double)nbaud/(double)txpl)*1E6; 
-    rprm.filter_bandwidth=rprm.baseband_samplerate; 
+    rprm.tbeam=bmnum;
+    rprm.tfreq=tfreq;
+    rprm.rfreq=tfreq;
+    rprm.trise=5000;
+    rprm.baseband_samplerate=((double)nbaud/(double)txpl)*1E6;
+    rprm.filter_bandwidth=rprm.baseband_samplerate;
     rprm.match_filter=1;
-    rprm.number_of_samples=total_samples+nbaud+10; 
+    rprm.number_of_samples=total_samples+nbaud+10;
     rprm.priority=cnum;
-    rprm.buffer_index=0;  
+    rprm.buffer_index=0;
 
     usecs=(int)(rprm.number_of_samples/rprm.baseband_samplerate*1E6);
 
@@ -729,7 +729,7 @@ int SiteFhwIntegrate(int (*lags)[2]) {
 
 usleep(usecs);
 
-/*  FIXME: This is not defined 
+/*  FIXME: This is not defined
     smsg.type=WAIT_FOR_DATA;
     TCPIPMsgSend(sock,&smsg,sizeof(struct ROSMsg));
     TCPIPMsgRecv(sock,&rmsg,sizeof(struct ROSMsg));
@@ -751,9 +751,9 @@ usleep(usecs);
     TCPIPMsgRecv(sock,&dprm,sizeof(struct DataPRM));
     if(rdata.main) free(rdata.main);
     if(rdata.back) free(rdata.back);
-    if (debug) 
+    if (debug)
         fprintf(stderr,"FHW GET_DATA: samples %d status %d\n",dprm.samples,dprm.status);
-      
+
     if(dprm.status==0) {
       if (debug) {
         fprintf(stderr,"FHW GET_DATA: rdata.main: uint32: %ld array: %ld\n",sizeof(uint32),sizeof(uint32)*dprm.samples);
@@ -776,7 +776,7 @@ usleep(usecs);
         fprintf(stderr,"FHW GET_DATA: trtimes length %d\n",badtrdat.length);
       }
       TCPIPMsgRecv(sock, &badtrdat.length, sizeof(badtrdat.length));
-      if (debug) 
+      if (debug)
         fprintf(stderr,"FHW GET_DATA: badtrdat.start_usec: uint32: %ld array: %ld\n",sizeof(uint32),sizeof(uint32)*badtrdat.length);
       badtrdat.start_usec=malloc(sizeof(uint32)*badtrdat.length);
       badtrdat.duration_usec=malloc(sizeof(uint32)*badtrdat.length);
@@ -815,7 +815,7 @@ usleep(usecs);
       ttime=time_now.tv_sec;
     }
     gmtime_r(&ttime,&tstruct);
-    if(seqlog_dir!=NULL) { 
+    if(seqlog_dir!=NULL) {
       sprintf(filename,"%s/seqlog.fhw%s.%04d%02d%02d",seqlog_dir,channame,tstruct.tm_year+1900,tstruct.tm_mon+1,tstruct.tm_mday);
       if(strcmp(filename,seqlog_name)!=0) {
         strcpy(seqlog_name,filename);
@@ -831,15 +831,15 @@ usleep(usecs);
     }
     if (seqlog!=NULL) {
       fwrite(&dprm.event_secs,sizeof(int32),1,seqlog);
-      temp32=floor(dprm.event_nsecs/1000); 
+      temp32=floor(dprm.event_nsecs/1000);
       fwrite(&temp32,sizeof(int32),1,seqlog);
       fwrite(&rprm.tbeam,sizeof(int32),1,seqlog);
       fwrite(&rprm.tfreq,sizeof(int32),1,seqlog);
       fwrite(&badtrdat.length,sizeof(int32),1,seqlog);
       for(i=0;i<badtrdat.length;i++) {
-        temp32=badtrdat.start_usec[i]; 
+        temp32=badtrdat.start_usec[i];
         fwrite(&temp32,sizeof(int32),1,seqlog);
-        temp32=badtrdat.duration_usec[i]; 
+        temp32=badtrdat.duration_usec[i];
         fwrite(&temp32,sizeof(int32),1,seqlog);
       }
     }
@@ -909,7 +909,7 @@ usleep(usecs);
           uI32=((uint32) I) & 0xFFFF;
           (rdata.main)[n]=uQ32|uI32;
         }
-      }  
+      }
       if(f_diagnostic_ascii!=NULL) {
         fprintf(f_diagnostic_ascii,"Sequence : Raw Data : START\n");
         fprintf(f_diagnostic_ascii,"  nsamp: %8d\n",nsamp);
@@ -1017,7 +1017,7 @@ usleep(usecs);
 /* rdata.back is natively an uint32 pointer */
 /* total_samples*8 represents number of bytes for main and back samples */
 
-      
+
       dest = (void *)(samples);  /* look iqoff bytes into samples area */
       dest+=iqoff;
       if ((iqoff+dprm.samples*2*sizeof(uint32) )<IQBUFSIZE) {
@@ -1051,42 +1051,42 @@ usleep(usecs);
         fprintf(stderr,"FHW seq %d :: iqsze: %8d\n",nave,iqsze);
       }
 
-    /* calculate ACF */   
+    /* calculate ACF */
       if (mplgexs==0) {
         dest = (void *)(samples);
         dest += iqoff;
-        rngoff=2*rxchn; 
-        if (debug) 
+        rngoff=2*rxchn;
+        if (debug)
         fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
-        if (debug) 
+        if (debug)
         fprintf(stderr,"FHW seq %d :: ACFSumPower\n",nave);
         aflg=ACFSumPower(&tsgprm,mplgs,lagtable,pwr0,
 		     (int16 *) dest,rngoff,skpnum!=0,
                      roff,ioff,badrng,
                      noise,mxpwr,seqatten[nave]*atstp,
                      thr,lmt,&abflg);
-        if (debug) 
+        if (debug)
         fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
-        if (debug) 
+        if (debug)
         fprintf(stderr,"FHW seq %d :: ACFCalculate acf\n",nave);
         ACFCalculate(&tsgprm,(int16 *) dest,rngoff,skpnum!=0,
           roff,ioff,mplgs,lagtable,acfd,ACF_PART,2*dprm.samples,badrng,seqatten[nave]*atstp,NULL);
         if (xcf ==1 ){
-        if (debug) 
+        if (debug)
         fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
-        if (debug) 
+        if (debug)
           fprintf(stderr,"FHW seq %d :: ACFCalculate xcf\n",nave);
           ACFCalculate(&tsgprm,(int16 *) dest,rngoff,skpnum!=0,
                     roff,ioff,mplgs,lagtable,xcfd,XCF_PART,2*dprm.samples,badrng,seqatten[nave]*atstp,NULL);
         }
         if ((nave>0) && (seqatten[nave] !=seqatten[nave])) {
-        if (debug) 
+        if (debug)
         fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
-        if (debug) 
+        if (debug)
           fprintf(stderr,"FHW seq %d :: ACFNormalize\n",nave);
-              ACFNormalize(pwr0,acfd,xcfd,tsgprm.nrang,mplgs,atstp); 
-        }  
-        if (debug) 
+              ACFNormalize(pwr0,acfd,xcfd,tsgprm.nrang,mplgs,atstp);
+        }
+        if (debug)
         fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
 
 
@@ -1103,8 +1103,8 @@ usleep(usecs);
   }
   if(seqlog!=NULL) fflush(seqlog);
 
-  /* Now divide by nave to get the average pwr0 and acfd values for the 
-     integration period */ 
+  /* Now divide by nave to get the average pwr0 and acfd values for the
+     integration period */
 
    if (mplgexs==0) {
 
@@ -1114,7 +1114,7 @@ usleep(usecs);
        for(range=0; range < nrang;range++) {
          pwr0[range]=(double)pwr0[range]/(double)nave;
 
-         for(lag=0;lag < mplgs; lag++) {     
+         for(lag=0;lag < mplgs; lag++) {
            acfd[range*(2*mplgs)+2*lag]= (double) acfd[range*(2*mplgs)+2*lag]/
                                        (double) nave;
            acfd[range*(2*mplgs)+2*lag+1]= (double) acfd[range*(2*mplgs)+2*lag+1]/
@@ -1149,7 +1149,7 @@ usleep(usecs);
 int SiteFhwEndScan(int bsc,int bus) {
 
   struct ROSMsg smsg,rmsg;
-  
+
   struct timeval tock;
   struct timeval tick;
   double bnd;
