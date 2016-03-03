@@ -1070,14 +1070,14 @@ usleep(usecs);
         if (debug)
         fprintf(stderr,"FHW seq %d :: ACFCalculate acf\n",nave);
         ACFCalculate(&tsgprm,(int16 *) dest,rngoff,skpnum!=0,
-          roff,ioff,mplgs,lagtable,acfd,ACF_PART,2*dprm.samples,badrng,seqatten[nave]*atstp,NULL);
+          roff,ioff,mplgs,lagtable,acfd,ACF_PART,2*total_samples,badrng,seqatten[nave]*atstp,NULL);
         if (xcf ==1 ){
             if (debug)
                 fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
             if (debug)
                 fprintf(stderr,"FHW seq %d :: ACFCalculate xcf\n",nave);
             ACFCalculate(&tsgprm,(int16 *) dest,rngoff,skpnum!=0,
-                         roff,ioff,mplgs,lagtable,xcfd,XCF_PART,2*dprm.samples,
+                         roff,ioff,mplgs,lagtable,xcfd,XCF_PART,2*total_samples,
                          badrng,seqatten[nave]*atstp,NULL);
         }
         if ((nave>0) && (seqatten[nave] !=seqatten[nave])) {
