@@ -128,6 +128,7 @@ int main(int argc,char *argv[]) {
   int scnus=0;
   int skip=0;
   int cnt=0;
+  int xcnt=0;  /* Initialize xcf cnt to 0 */
   int bm1=0;
   int bm2=1;
   int bm3=3;
@@ -411,7 +412,7 @@ int main(int argc,char *argv[]) {
       scan=0;
       if (skip == 2) break;
       skip++;
-      bmnum = beams[skip];
+/*      bmnum = beams[skip]; */
 
     /* End of scan loop */
     } while (1);
