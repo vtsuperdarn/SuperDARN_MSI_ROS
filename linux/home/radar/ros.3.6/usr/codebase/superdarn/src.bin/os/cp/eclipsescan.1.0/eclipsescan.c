@@ -124,7 +124,7 @@ int main(int argc,char *argv[]) {
 
   int exitpoll=0;
   int scannowait=0;
-  int scnsc=120;
+  int scnsc=30;
   int scnus=0;
   int skip;
   int cnt=0;
@@ -294,16 +294,6 @@ int main(int argc,char *argv[]) {
         cnt=0;
       } else xcf=0;
     } else xcf=0;
-
-    skip=OpsFindSkip(scnsc,scnus);
-
-    if (backward) {
-      bmnum=sbm-skip;
-      if (bmnum<ebm) bmnum=sbm;
-    } else {
-      bmnum=sbm+skip;
-      if (bmnum>ebm) bmnum=sbm;
-    }
 
     do {
 
