@@ -72,7 +72,7 @@ struct TCPIPMsgHost errlog={"127.0.0.1",44100,-1};
 
 struct TCPIPMsgHost shell={"127.0.0.1",44101,-1};
 
-int tnum=3;      
+int tnum=3;
 struct TCPIPMsgHost task[3]={
   {"127.0.0.1",2,-1}, /* raw acfwrite */
   {"127.0.0.1",3,-1}, /* fit acf write */
@@ -123,7 +123,7 @@ int main(int argc,char *argv[]) {
     char logtxt[1024];
 
   int exitpoll=0;
-  int scannowait=0; 
+  int scannowait=0;
   int scnsc=120;
   int scnus=0;
   int skip;
@@ -139,7 +139,7 @@ int main(int argc,char *argv[]) {
   int total_integration_usecs=0;
   int fixfrq=-1;
 
-  
+
 
   cp=999;
   intsc=7;
@@ -173,19 +173,19 @@ int main(int argc,char *argv[]) {
 
 
   OptionAdd(&opt,"ep",'i',&errlog.port);
-  OptionAdd(&opt,"sp",'i',&shell.port); 
+  OptionAdd(&opt,"sp",'i',&shell.port);
 
-  OptionAdd(&opt,"bp",'i',&baseport); 
+  OptionAdd(&opt,"bp",'i',&baseport);
 
   OptionAdd(&opt,"ros",'t',&roshost);
 
-  OptionAdd(&opt,"stid",'t',&ststr); 
- 
+  OptionAdd(&opt,"stid",'t',&ststr);
+
   OptionAdd(&opt,"fast",'x',&fast);
   OptionAdd(&opt,"nowait",'x',&scannowait);
-   
-  arg=OptionProcess(1,argc,argv,&opt,NULL);  
- 
+
+  arg=OptionProcess(1,argc,argv,&opt,NULL);
+
   if (ststr==NULL) ststr=dfststr;
 
   if (roshost==NULL) roshost=getenv("ROSHOST");
@@ -204,12 +204,12 @@ int main(int argc,char *argv[]) {
       pcode[i*nbaud+n]=bcode[n];
     }
   }
-  
-  if ((errlog.sock=TCPIPMsgOpen(errlog.host,errlog.port))==-1) {    
+
+  if ((errlog.sock=TCPIPMsgOpen(errlog.host,errlog.port))==-1) {
     fprintf(stderr,"Error connecting to error log.\n");
   }
 
-  if ((shell.sock=TCPIPMsgOpen(shell.host,shell.port))==-1) {    
+  if ((shell.sock=TCPIPMsgOpen(shell.host,shell.port))==-1) {
     fprintf(stderr,"Error connecting to shell.\n");
   }
 
@@ -228,21 +228,21 @@ int main(int argc,char *argv[]) {
 
   SiteStart(roshost);
 
-  strncpy(combf,progid,80);   
- 
+  strncpy(combf,progid,80);
+
   OpsSetupCommand(argc,argv);
   OpsSetupShell();
-   
+
   RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l",                        
-                  &sbm,&ebm,                              
-                  &dfrq,&nfrq,                  
-                  &dfrang,&nfrang,                            
-                  &dmpinc,&nmpinc,                            
-                  &frqrng,&xcnt);      
-  
- 
+                  &sbm,&ebm,
+                  &dfrq,&nfrq,
+                  &dfrang,&nfrang,
+                  &dmpinc,&nmpinc,
+                  &frqrng,&xcnt);
+
+
   status=SiteSetupRadar();
-  
+
   if (status !=0) {
     ErrLog(errlog.sock,progname,"Error locating hardware.");
     exit (1);
@@ -271,35 +271,35 @@ int main(int argc,char *argv[]) {
 
   sprintf(progname,"eclipsescan");
 
-  OpsLogStart(errlog.sock,progname,argc,argv);  
+  OpsLogStart(errlog.sock,progname,argc,argv);
 
   OpsSetupTask(tnum,task,errlog.sock,progname);
   for (n=0;n<tnum;n++) {
     RMsgSndReset(task[n].sock);
-    RMsgSndOpen(task[n].sock,strlen( (char *) command),command);     
+    RMsgSndOpen(task[n].sock,strlen( (char *) command),command);
   }
 
-  
+
   OpsFitACFStart();
 
   tsgid=SiteTimeSeq(ptab);
 
   do {
-  
+
     if (SiteStartScan() !=0) continue;
-    
+
     if (OpsReOpen(2,0,0) !=0) {
       ErrLog(errlog.sock,progname,"Opening new files.");
       for (n=0;n<tnum;n++) {
         RMsgSndClose(task[n].sock);
-        RMsgSndOpen(task[n].sock,strlen( (char *) command),command);     
+        RMsgSndOpen(task[n].sock,strlen( (char *) command),command);
       }
     }
 
     scan=1;
-    
+
     ErrLog(errlog.sock,progname,"Starting scan.");
-   
+
     if (xcnt>0) {
       cnt++;
       if (cnt==xcnt) {
@@ -309,7 +309,7 @@ int main(int argc,char *argv[]) {
     } else xcf=0;
 
     skip=OpsFindSkip(scnsc,scnus);
-    
+
     if (backward) {
       bmnum=sbm-skip;
       if (bmnum<ebm) bmnum=sbm;
@@ -321,7 +321,7 @@ int main(int argc,char *argv[]) {
     do {
 
       TimeReadClock(&yr,&mo,&dy,&hr,&mt,&sc,&us);
-      
+
       if (OpsDayNight()==1) {
         stfrq=dfrq;
         /*mpinc=dmpinc;*/
@@ -330,7 +330,7 @@ int main(int argc,char *argv[]) {
         stfrq=nfrq;
         /*mpinc=nmpinc;*/
         frang=nfrang;
-      }        
+      }
       if(fixfrq>0) {
         stfrq=fixfrq;
         tfreq=fixfrq;
@@ -342,27 +342,27 @@ int main(int argc,char *argv[]) {
       ErrLog(errlog.sock,progname,logtxt);
 
       ErrLog(errlog.sock,progname,"Starting Integration.");
-            
+
       SiteStartIntt(intsc,intus);
 
       ErrLog(errlog.sock,progname,"Doing clear frequency search."); 
-   
+
       sprintf(logtxt, "FRQ: %d %d", stfrq, frqrng);
       ErrLog(errlog.sock,progname, logtxt);
 
-            
+
       printf("FRQ: %d %d", stfrq, frqrng);
       if(fixfrq<0) {
         tfreq=SiteFCLR(stfrq-frqrng/2,stfrq+frqrng/2);
-      } 
+      }
       sprintf(logtxt,"Transmitting on: %d (Noise=%g)",tfreq,noise);
       ErrLog(errlog.sock,progname,logtxt);
 
-    
-      nave=SiteIntegrate(lags);   
+
+      nave=SiteIntegrate(lags);
       if (nave<0) {
         sprintf(logtxt,"Integration error:%d",nave);
-        ErrLog(errlog.sock,progname,logtxt); 
+        ErrLog(errlog.sock,progname,logtxt);
         continue;
       }
       sprintf(logtxt,"Number of sequences: %d",nave);
@@ -371,14 +371,14 @@ int main(int argc,char *argv[]) {
       OpsBuildPrm(prm,ptab,lags);
 
       OpsBuildIQ(iq,&badtr);
-      
+
       OpsBuildRaw(raw);
-      
+
       FitACF(prm,raw,fblk,fit);
-      
-  
+
+
       /* write out data here */
-      
+
       msg.num=0;
       msg.tsize=0;
 
@@ -428,20 +428,19 @@ int main(int argc,char *argv[]) {
     } while (1);
 
     ErrLog(errlog.sock,progname,"Waiting for scan boundary."); 
-  
+
     if ((exitpoll==0) && (scannowait==0)) SiteEndScan(scnsc,scnus);
 
   } while (exitpoll==0);
-  
-  
+
+
   for (n=0;n<tnum;n++) RMsgSndClose(task[n].sock);
-  
+
 
   ErrLog(errlog.sock,progname,"Ending program.");
 
 
   SiteExit(0);
 
-  return 0;   
-} 
- 
+  return 0;
+}
