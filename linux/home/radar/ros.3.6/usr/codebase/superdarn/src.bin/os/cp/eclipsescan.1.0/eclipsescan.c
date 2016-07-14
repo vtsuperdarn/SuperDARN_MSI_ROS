@@ -412,7 +412,6 @@ int main(int argc,char *argv[]) {
       scan=0;
       if (skip == 2) break;
       skip++;
-/*      bmnum = beams[skip]; */
 
     /* End of scan loop */
     } while (1);
