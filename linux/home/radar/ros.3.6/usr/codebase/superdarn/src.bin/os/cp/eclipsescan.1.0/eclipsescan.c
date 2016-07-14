@@ -140,7 +140,7 @@ int main(int argc,char *argv[]) {
   int fixfrq=-1;
   /* Beam array to cycle through. Probably a better way to to this
      but my c-fu is not strong. */
-  int *beams
+  int *beams;
   beams = (int *)malloc(3*sizeof(int));
 
 
