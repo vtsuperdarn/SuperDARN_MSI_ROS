@@ -128,6 +128,9 @@ int main(int argc,char *argv[]) {
   int scnus=0;
   int skip;
   int cnt=0;
+  int bm1=0;
+  int bm2=1;
+  int bm3=3;
 
   unsigned char discretion=0;
 
@@ -182,6 +185,11 @@ int main(int argc,char *argv[]) {
 
   OptionAdd(&opt,"nowait",'x',&scannowait);
 
+  /* Add in what beams we'll cycle through  */
+  OptionAdd(&opt,"bm1",'i',&bm1);
+  OptionAdd(&opt,"bm2",'i',&bm2);
+  OptionAdd(&opt,"bm3",'i',&bm3);
+
   arg=OptionProcess(1,argc,argv,&opt,NULL);
 
   if (ststr==NULL) ststr=dfststr;
@@ -231,12 +239,12 @@ int main(int argc,char *argv[]) {
   OpsSetupCommand(argc,argv);
   OpsSetupShell();
 
-  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l",                        
+  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l bm1 l bm2 l bm3",
                   &sbm,&ebm,
                   &dfrq,&nfrq,
                   &dfrang,&nfrang,
                   &dmpinc,&nmpinc,
-                  &frqrng,&xcnt);
+                  &frqrng,&xcnt,&bm1,&bm2,&bm3);
 
 
   status=SiteSetupRadar();
