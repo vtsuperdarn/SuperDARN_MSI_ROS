@@ -307,6 +307,9 @@ int main(int argc,char *argv[]) {
 
       TimeReadClock(&yr,&mo,&dy,&hr,&mt,&sc,&us);
 
+      /* Set the beam number from the skip value */
+      bmnum = beams[skip];
+
       if (OpsDayNight()==1) {
         stfrq=dfrq;
         /*mpinc=dmpinc;*/
@@ -406,16 +409,21 @@ int main(int argc,char *argv[]) {
 
       if (exitpoll !=0) break;
       scan=0;
-      if (bmnum==ebm) break;
-      if (backward) bmnum--;
-      else bmnum++;
+      if (skip == 2) break;
+      skip++;
+      bmnum = beams[skip];
 
+    /* End of scan loop */
     } while (1);
 
-    ErrLog(errlog.sock,progname,"Waiting for scan boundary."); 
+    ErrLog(errlog.sock,progname,"Waiting for scan boundary.");
+
+    /* Reset skip to zero to restart through the beams */
+    skip=0;
 
     if ((exitpoll==0) && (scannowait==0)) SiteEndScan(scnsc,scnus);
 
+  /* End of control program loop */
   } while (exitpoll==0);
 
 
