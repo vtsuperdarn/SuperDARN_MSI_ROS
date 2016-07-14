@@ -129,7 +129,6 @@ int main(int argc,char *argv[]) {
   int skip;
   int cnt=0;
 
-  unsigned char fast=0;
   unsigned char discretion=0;
 
   int status=0,n,i;
@@ -141,9 +140,9 @@ int main(int argc,char *argv[]) {
 
 
 
-  cp=999;
-  intsc=7;
-  intus=0;
+  cp=1220;
+  intsc=9;
+  intus=750000;
   mppul=8;
   mplgs=23;
   mpinc=1560;
@@ -181,7 +180,6 @@ int main(int argc,char *argv[]) {
 
   OptionAdd(&opt,"stid",'t',&ststr);
 
-  OptionAdd(&opt,"fast",'x',&fast);
   OptionAdd(&opt,"nowait",'x',&scannowait);
 
   arg=OptionProcess(1,argc,argv,&opt,NULL);
@@ -249,13 +247,6 @@ int main(int argc,char *argv[]) {
   }
 
 
-  if (fast) {
-     cp=151;
-     scnsc=60;
-     scnus=0;
-     intsc=3;
-     intus=500000;
-  }
   beams=abs(ebm-sbm)+1;
   if(beams > 16) {
     if (scannowait==0) {
