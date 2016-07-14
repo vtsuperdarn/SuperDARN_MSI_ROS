@@ -136,9 +136,6 @@ int main(int argc,char *argv[]) {
 
   int status=0,n,i;
 
-  int beams=0;
-  int total_scan_usecs=0;
-  int total_integration_usecs=0;
   int fixfrq=-1;
 
 
@@ -255,15 +252,6 @@ int main(int argc,char *argv[]) {
   }
 
 
-  beams=abs(ebm-sbm)+1;
-  if(beams > 16) {
-    if (scannowait==0) {
-      total_scan_usecs=(scnsc-3)*1E6+scnus;
-      total_integration_usecs=total_scan_usecs/beams;
-      intsc=total_integration_usecs/1E6;
-      intus=total_integration_usecs -(intsc*1E6);
-    }
-  }
   if (discretion) cp= -cp;
 
   txpl=(nbaud*rsep*20)/3;
