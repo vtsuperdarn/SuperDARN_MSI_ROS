@@ -126,7 +126,7 @@ int main(int argc,char *argv[]) {
   int scannowait=0;
   int scnsc=30;
   int scnus=0;
-  int skip;
+  int skip=0;
   int cnt=0;
   int bm1=0;
   int bm2=1;
@@ -137,7 +137,10 @@ int main(int argc,char *argv[]) {
   int status=0,n,i;
 
   int fixfrq=-1;
-
+  /* Beam array to cycle through. Probably a better way to to this
+     but my c-fu is not strong. */
+  int *beams
+  beams = (int *)malloc(3*sizeof(int));
 
 
   cp=1220;
@@ -189,6 +192,11 @@ int main(int argc,char *argv[]) {
 
   arg=OptionProcess(1,argc,argv,&opt,NULL);
 
+  /*With options processed, lets turn beams into an array */
+  beams[0] = bm1;
+  beams[1] = bm2;
+  beams[2] = bm3;
+
   if (ststr==NULL) ststr=dfststr;
 
   if (roshost==NULL) roshost=getenv("ROSHOST");
@@ -236,7 +244,7 @@ int main(int argc,char *argv[]) {
   OpsSetupCommand(argc,argv);
   OpsSetupShell();
 
-  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l bm1 l bm2 l bm3",
+  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l bm1 l bm2 l bm3 l",
                   &sbm,&ebm,
                   &dfrq,&nfrq,
                   &dfrang,&nfrang,
@@ -322,7 +330,7 @@ int main(int argc,char *argv[]) {
 
       SiteStartIntt(intsc,intus);
 
-      ErrLog(errlog.sock,progname,"Doing clear frequency search."); 
+      ErrLog(errlog.sock,progname,"Doing clear frequency search.");
 
       sprintf(logtxt, "FRQ: %d %d", stfrq, frqrng);
       ErrLog(errlog.sock,progname, logtxt);
