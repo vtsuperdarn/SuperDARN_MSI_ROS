@@ -41,7 +41,7 @@
 #define COMBF_SIZE 80
 #define MAX_BEAM 255
 #define MAXNAVE 300
-/* Doubled the size of IQBUFSIZE for pcode ops */
-#define IQBUFSIZE 1048576
+/* Original size of IQBUFSIZE was 524288 */
+#define IQBUFSIZE 2097152
 #endif
 
