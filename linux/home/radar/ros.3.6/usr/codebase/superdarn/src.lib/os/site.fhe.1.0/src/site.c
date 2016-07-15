@@ -1027,7 +1027,7 @@ usleep(usecs);
         dest += dprm.samples*sizeof(uint32); /* skip ahead number of samples * 32 bit per sample to account for rdata.main*/
         memmove(dest,rdata.back,dprm.samples*sizeof(uint32));
       } else {
-        fprintf(stderr,"IQ Buffer overrun in SiteIntegrate\n");
+        fprintf(stderr,"IQ Buffer overrun in SiteFheIntegrate\n");
         fflush(stderr);
       }
       iqsze+=dprm.samples*sizeof(uint32)*2;  /*  Total of number bytes so far copied into samples array */
