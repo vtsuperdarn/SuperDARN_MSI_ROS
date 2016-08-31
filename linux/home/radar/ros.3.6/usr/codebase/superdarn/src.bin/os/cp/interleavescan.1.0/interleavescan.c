@@ -74,6 +74,9 @@ struct TCPIPMsgHost task[4]={
                               {"127.0.0.1",4,-1}  /* rtserver */
                             };
 
+char *roshost=NULL;
+
+
 void usage(void);
 int main(int argc,char *argv[]) {
 
@@ -144,14 +147,14 @@ int main(int argc,char *argv[]) {
 
     /*
     beam sequences for 24-beam MSI radars but only using 20 most meridional
-      beams; 
+      beams;
    */
     /* count     1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 */
     /*          21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 */
     int bmse[20] =
-             { 0, 4, 8,12,16, 2, 6,10,14,18, 1, 5, 9,13,17, 3, 7,11,15,19};
+             { 0,4,8,12,16, 2,6,10,14,18, 1,5,9,13,17, 3,7,11,15,19};
     int bmsw[20] =
-             {23,19,15,11, 7,21,17,13, 9, 5,22,18,14,10, 6,20,16,12, 8, 4};
+             {23,19,15,11,7, 21,17,13,9,5, 22,18,14,10,6, 20,16,12,8,4};
 
   /* standard radar defaults */
     cp     = 191;           /* using 191 per memorandum */
@@ -179,6 +182,7 @@ int main(int argc,char *argv[]) {
     OptionAdd(&opt,"ep",    'i',&errlog.port);
     OptionAdd(&opt,"sp",    'i',&shell.port);
     OptionAdd(&opt,"bp",    'i',&baseport);
+    OptionAdd(&opt,"ros",   't',&roshost);      /* Change the roshost location? */
     OptionAdd(&opt,"stid",  't',&ststr);
     OptionAdd(&opt,"fixfrq",'i',&fixfrq);       /* fix the transmit frequency */
     OptionAdd(&opt,"-help", 'x',&hlp);          /* just dump some parameters */
@@ -186,6 +190,9 @@ int main(int argc,char *argv[]) {
     /* Process all of the command line options
             Important: need to do this here because we need stid and ststr */
     arg=OptionProcess(1,argc,argv,&opt,NULL);
+
+    /* Get roshost from environment if not set by command line */
+    if (roshost==NULL) roshost=getenv("ROSHOST");
 
     /* specify beams right here assuming the following: */
     /* scnsc=120; scnus=0;    */
@@ -241,7 +248,11 @@ int main(int argc,char *argv[]) {
     /* rst/usr/codebase/superdarn/src.lib/os/site.1.3/src/build.c */
     /* note that stid is a global variable set in the previous function...
             rst/usr/codebase/superdarn/src.lib/os/ops.1.10/src/global.c */
-    status=SiteBuild(stid);
+    /* This does not seem to be the case and the code does not compile
+    with an error of 'makes pointer from integer without a cast' */
+
+/*    status=SiteBuild(stid); */
+    status=SiteBuild(ststr,NULL); /* second argument is version string */
 
     if (status==-1) {
         fprintf(stderr,"Could not identify station.\n");
@@ -257,7 +268,8 @@ int main(int argc,char *argv[]) {
     ErrLog(errlog.sock,progname,logtxt);
 
     /* IMPORTANT: sbm and ebm are reset by this function */
-    SiteStart();
+    /* For FHR, need to pass in the roshost variable */
+    SiteStart(roshost);
 
     /* Reprocess the command line to restore desired parameters */
     arg=OptionProcess(1,argc,argv,&opt,NULL);
