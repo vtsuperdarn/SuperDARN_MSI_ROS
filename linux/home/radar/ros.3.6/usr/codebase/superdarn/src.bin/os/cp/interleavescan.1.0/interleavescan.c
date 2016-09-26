@@ -213,31 +213,6 @@ int main(int argc,char *argv[]) {
     for (i=0; i<nintgs; i++)
         intgt[i] = i*(intsc + intus*1e-6);
 
-    /* Point to the beams here */
-    if (strcmp(ststr,"fhe") == 0) {     /* This should probably really be decoupled here....why not use backwards variable? */
-        bms = bmse;     /* 1-min sequence */
-    } else if (strcmp(ststr,"fhw") == 0) {  /* Ditto here...why not use backwards variable */
-        bms = bmsw;     /* 1-min sequence */
-    } else {
-        printf("Error: Not intended for station %s\n", ststr);
-        return (-1);
-    }
-
-    if (hlp) {
-        usage();
-
-/*      printf("  start beam: %2d\n", sbm); */
-/*      printf("  end   beam: %2d\n", ebm); */
-        printf("\n");
-    printf("sqnc  stme  bmno\n");
-        for (i=0; i<nintgs; i++) {
-            printf(" %2d   %3d    %2d", i, intgt[i], bms[i]);
-            printf("\n");
-        }
-
-        return (-1);
-    }
-
     /* end of main Dartmouth mods */
     /* not sure if -nrang commandline option works */
 
@@ -271,10 +246,7 @@ int main(int argc,char *argv[]) {
 
     /* dump beams to log file */
     sprintf(progname,"interleavescan");
-    for (i=0; i<nintgs; i++){
-        sprintf(tempLog, "%3d", bms[i]);
-        strcat(logtxt, tempLog);
-    }
+
     ErrLog(errlog.sock,progname,logtxt);
 
     /* IMPORTANT: sbm and ebm are reset by this function */
@@ -310,6 +282,37 @@ int main(int argc,char *argv[]) {
 
     OpsLogStart(errlog.sock,progname,argc,argv);
     OpsSetupTask(tnum,task,errlog.sock,progname);
+
+    /* Point to the beams here */
+    if (backward) {
+        bms = bmsw;     /* 1-min sequence */
+    } else {
+        bms = bmse;     /* 1-min sequence */
+/*    } else {
+        printf("Error: Not intended for station %s\n", ststr);
+        return (-1);   Having to eliminate the else condition here if using backward */
+    }
+
+    if (hlp) {
+        usage();
+
+/*      printf("  start beam: %2d\n", sbm); */
+/*      printf("  end   beam: %2d\n", ebm); */
+        printf("\n");
+    printf("sqnc  stme  bmno\n");
+        for (i=0; i<nintgs; i++) {
+            printf(" %2d   %3d    %2d", i, intgt[i], bms[i]);
+            printf("\n");
+        }
+
+        return (-1);
+    }
+
+    for (i=0; i<nintgs; i++){
+        sprintf(tempLog, "%3d", bms[i]);
+        strcat(logtxt, tempLog);
+    }
+
 
     for (n=0;n<tnum;n++) {
         RMsgSndReset(task[n].sock);
