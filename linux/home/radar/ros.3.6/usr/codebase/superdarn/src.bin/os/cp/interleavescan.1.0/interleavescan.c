@@ -55,6 +55,10 @@
 #include "sitebuild.h"
 #include "siteglobal.h"
 
+/* Additional libraries to include for fhr */
+#include "rosmsg.h"
+#include "tsg.h"
+
 char *ststr=NULL;
 char *dfststr="tst";
 void *tmpbuf;
@@ -75,6 +79,7 @@ struct TCPIPMsgHost task[4]={
                             };
 
 char *roshost=NULL;
+char *droshost={"127.0.0.1"};
 
 
 void usage(void);
@@ -117,7 +122,7 @@ int main(int argc,char *argv[]) {
 
         {43,43}};       /* alternate lag-0  */
 
-    char logtxt[1024]="";
+    char logtxt[1024];
     char tempLog[40];
 
     int exitpoll=0;
@@ -135,14 +140,14 @@ int main(int argc,char *argv[]) {
     int i,n;
     unsigned char discretion=0;
     int status=0;
-  int fixfrq=0;
+    int fixfrq=0;
 
     /* new variables for dynamically creating beam sequences */
     int *bms;                       /* scanning beams                                     */
     int intgt[20];          /* start times of each integration period             */
     int nintgs=20;          /* number of integration periods per scan; SGS 1-min  */
-    int bufsc=0;                /* a buffer at the end of scan; historically this has */
-    int bufus=0;                /*  been set to 3.0s to account for what???           */
+/*    int bufsc=0;  */              /* a buffer at the end of scan; historically this has */
+/*    int bufus=0;  */              /*  been set to 3.0s to account for what???           */
     unsigned char hlp=0;
 
     /*
@@ -196,6 +201,8 @@ int main(int argc,char *argv[]) {
 
     /* Get roshost from environment if not set by command line */
     if (roshost==NULL) roshost=getenv("ROSHOST");
+    /* If still not set, use default roshost */
+    if (roshost==NULL) roshost=droshost;
 
     /* specify beams right here assuming the following: */
     /* scnsc=120; scnus=0;    */
@@ -207,9 +214,9 @@ int main(int argc,char *argv[]) {
         intgt[i] = i*(intsc + intus*1e-6);
 
     /* Point to the beams here */
-    if (strcmp(ststr,"cve") == 0) {
+    if (strcmp(ststr,"fhe") == 0) {     /* This should probably really be decoupled here....why not use backwards variable? */
         bms = bmse;     /* 1-min sequence */
-    } else if (strcmp(ststr,"cvw") == 0) {
+    } else if (strcmp(ststr,"fhw") == 0) {  /* Ditto here...why not use backwards variable */
         bms = bmsw;     /* 1-min sequence */
     } else {
         printf("Error: Not intended for station %s\n", ststr);
@@ -263,7 +270,7 @@ int main(int argc,char *argv[]) {
     }
 
     /* dump beams to log file */
-    sprintf(progname,"rbspscan");
+    sprintf(progname,"interleavescan");
     for (i=0; i<nintgs; i++){
         sprintf(tempLog, "%3d", bms[i]);
         strcat(logtxt, tempLog);
