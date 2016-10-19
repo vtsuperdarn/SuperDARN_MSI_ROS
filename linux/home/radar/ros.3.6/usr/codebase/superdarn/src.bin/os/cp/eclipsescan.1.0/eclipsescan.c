@@ -124,7 +124,7 @@ int main(int argc,char *argv[]) {
 
   int exitpoll=0;
   int scannowait=0;
-  int scnsc=30;
+  int scnsc=10;
   int scnus=0;
   int skip=0;
   int cnt=0;
@@ -145,8 +145,8 @@ int main(int argc,char *argv[]) {
 
 
   cp=1220;
-  intsc=9;
-  intus=750000;
+  intsc=3;
+  intus=0;
   mppul=8;
   mplgs=23;
   mpinc=1560;
