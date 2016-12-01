@@ -253,6 +253,12 @@ int SiteFheSetupRadar() {
 
   samples=(int16 *)
     ShMemAlloc(sharedmemory,IQBUFSIZE,O_RDWR | O_CREAT,1,&shmemfd);
+
+  if(IQBUFSIZE < (sizeof(int32) * 1e6 * intsc * nbaud / mpinc)){
+    fprintf(stderr,"IQBuffer size is too small\n");
+    SiteFheExit(-1);
+  }
+
   if(samples==NULL) {
     fprintf(stderr,"IQBuffer %s is Null\n",sharedmemory);
     SiteFheExit(-1);
