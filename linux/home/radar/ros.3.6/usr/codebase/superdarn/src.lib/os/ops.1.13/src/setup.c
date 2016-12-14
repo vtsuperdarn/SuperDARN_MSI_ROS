@@ -1,30 +1,30 @@
 /* setup.c
-   ======= 
+   =======
    Author: R.J.Barnes
 */
 
 /*
  LICENSE AND DISCLAIMER
- 
+
  Copyright (c) 2012 The Johns Hopkins University/Applied Physics Laboratory
- 
+
  This file is part of the Radar Software Toolkit (RST).
- 
+
  RST is free software: you can redistribute it and/or modify
  it under the terms of the GNU Lesser General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  any later version.
- 
+
  RST is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public License
  along with RST.  If not, see <http://www.gnu.org/licenses/>.
- 
- 
- 
+
+
+
 */
 
 #include <stdlib.h>
@@ -69,9 +69,9 @@ int OpsSetupCommand(int argc,char *argv[]) {
 int OpsStart(char *ststr) {
   FILE *fp;
   char *envstr;
- 
+
   TimeReadClock(&yr,&mo,&dy,&hr,&mt,&sc,&us);
- 
+
   envstr=getenv("SD_RADAR");
   if (envstr==NULL) {
     fprintf(stderr,"Environment variable 'SD_RADARNAME' must be defined.\n");
@@ -86,7 +86,7 @@ int OpsStart(char *ststr) {
   }
 
   network=RadarLoad(fp);
-  fclose(fp); 
+  fclose(fp);
   if (network==NULL) {
     fprintf(stderr,"Failed to read radar information.\n");
     exit(-1);
@@ -134,7 +134,7 @@ int OpsFitACFStart() {
   TimeReadClock(&yr,&mo,&dy,&hr,&mt,&sc,&us);
   if (site==NULL) return -1;
   fit=FitMake();
-  fblk=FitACFMake(site,yr); 
+  fblk=FitACFMake(site,yr);
   return 0;
 }
 
@@ -151,14 +151,14 @@ void OpsLogStart(int sock,char *name,int argc,char *argv[]) {
 
 void OpsSetupTask(int tnum,struct TCPIPMsgHost *task,int sock,char *name) {
   char buffer[4096];
- 
+
   int n;
-  fprintf(stderr,"setting up tasks.\n"); 
+  fprintf(stderr,"setting up tasks.\n");
   for (n=0;n<tnum;n++) {
     task[n].sock=TCPIPMsgOpen(task[n].host,task[n].port);
-    if (task[n].sock==-1) 
+    if (task[n].sock==-1)
       sprintf(buffer,"Error attaching to %s:%d",task[n].host,task[n].port);
-    else 
+    else
      sprintf(buffer,"Attached to %s:%d",task[n].host,task[n].port);
     ErrLog(sock,name,buffer);
   }
