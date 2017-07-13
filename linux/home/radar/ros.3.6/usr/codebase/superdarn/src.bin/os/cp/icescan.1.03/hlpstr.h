@@ -1,5 +1,5 @@
-/* hlpstr.h 
-   ======== 
+/* hlpstr.h
+   ========
    Author: R.J.Barnes
 */
 
