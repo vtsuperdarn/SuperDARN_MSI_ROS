@@ -1,5 +1,6 @@
-/* normalscan.c
+/* icescan.c
    ============
+   K.T. Sterne, originally normalscan by:
    Author: R.J.Barnes & J.Spaleta
 */
 
@@ -76,7 +77,7 @@ char *dfststr="tst";
 void *tmpbuf;
 size_t tmpsze;
 
-char progid[80]={"normalscan"};
+char progid[80]={"icescan"};
 char progname[256];
 
 int arg=0;
@@ -137,12 +138,12 @@ int main(int argc,char *argv[]) {
   int exitpoll=0;
   int scannowait=0;
 
-  int scnsc=120;
+  int scnsc=60; // Default of 1 minute scan time.
   int scnus=0;
   int skip;
   int cnt=0;
 
-  unsigned char fast=0;
+//  unsigned char fast=0;
   unsigned char discretion=0;
 
   int status=0,n;
@@ -151,6 +152,11 @@ int main(int argc,char *argv[]) {
   int total_scan_usecs=0;
   int total_integration_usecs=0;
   int fixfrq=-1;
+
+  // Icescan specific parameters
+  int icefreqs[3]={10200, 12600, 14400};
+  int scancnt=0;
+  int freqcnt=0;
 
   printf("Size of int %d\n",(int)sizeof(int));
   printf("Size of long %d\n",(int)sizeof(long));
@@ -166,16 +172,16 @@ int main(int argc,char *argv[]) {
   printf("Size of Struct TSGprm  %d\n",(int)sizeof(struct TSGprm));
   printf("Size of Struct SiteSettings  %d\n",(int)sizeof(struct SiteSettings));
 
-  cp=150;
-  intsc=7; /* Set default integration time for normalscan (slow) */
-  intus=0; /* Integration time is dynamically calculated below based on the numbuer of beams. */
+  cp=1200;
+  intsc=3;
+  intus=200000; /* Integration time is dynamically calculated below based on the numbuer of beams. */
   mppul=8;
   mplgs=23;
   mpinc=1500;
   dmpinc=1500;
   nrang=100;
   rsep=45;
-  txpl=300;
+  txpl=300;  // txpl is recalculated below
 
   /* ========= PROCESS COMMAND LINE ARGUMENTS ============= */
 
@@ -201,7 +207,7 @@ int main(int argc,char *argv[]) {
 
   OptionAdd(&opt,"stid",'t',&ststr);
 
-  OptionAdd(&opt,"fast",'x',&fast);
+//  OptionAdd(&opt,"fast",'x',&fast);
 
   OptionAdd( &opt, "nowait", 'x', &scannowait);
   OptionAdd(&opt,"sb",'i',&sbm);
@@ -342,16 +348,23 @@ int main(int argc,char *argv[]) {
       if (bmnum>ebm) bmnum=sbm;
     }
 
+    // Logic to change frequency band on every scan
+    if (freqcnt<2) {
+        freqcnt++;
+        stfrq=icefreqs[freqcnt];
+    } else {
+        freqcnt=0;
+        stfrq=icefreqs[0];
+    }
+
     do {
 
       TimeReadClock(&yr,&mo,&dy,&hr,&mt,&sc,&us);
 
       if (OpsDayNight()==1) {
-        stfrq=dfrq;
         mpinc=dmpinc;
         frang=dfrang;
       } else {
-        stfrq=nfrq;
         mpinc=nmpinc;
         frang=nfrang;
       }
@@ -366,7 +379,7 @@ int main(int argc,char *argv[]) {
 
       ErrLog(errlog.sock,progname,"Starting Integration.");
 
-    printf("Entering Site Start Intt Station ID: %s  %d\n",ststr,stid);
+      printf("Entering Site Start Intt Station ID: %s  %d\n",ststr,stid);
       SiteStartIntt(intsc,intus);
 
       ErrLog(errlog.sock,progname,"Doing clear frequency search.");
