@@ -138,12 +138,12 @@ int main(int argc,char *argv[]) {
   int exitpoll=0;
   int scannowait=0;
 
-  int scnsc=60; // Default of 1 minute scan time.
+  int scnsc=60; /* Default of 1 minute scan time. */
   int scnus=0;
   int skip;
   int cnt=0;
 
-//  unsigned char fast=0;
+/*  unsigned char fast=0; */
   unsigned char discretion=0;
 
   int status=0,n;
@@ -153,9 +153,9 @@ int main(int argc,char *argv[]) {
   int total_integration_usecs=0;
   int fixfrq=-1;
 
-  // Icescan specific parameters
+  /* Icescan specific parameters  */
   int icefreqs[3]={10200, 12600, 14400};
-  int scancnt=0;
+/*  int scancnt=0;  Useful if not wanting to change frequency after more than each scan*/
   int freqcnt=0;
 
   printf("Size of int %d\n",(int)sizeof(int));
@@ -181,7 +181,7 @@ int main(int argc,char *argv[]) {
   dmpinc=1500;
   nrang=100;
   rsep=45;
-  txpl=300;  // txpl is recalculated below
+  txpl=300;  /* txpl is recalculated below  */
 
   /* ========= PROCESS COMMAND LINE ARGUMENTS ============= */
 
@@ -207,7 +207,7 @@ int main(int argc,char *argv[]) {
 
   OptionAdd(&opt,"stid",'t',&ststr);
 
-//  OptionAdd(&opt,"fast",'x',&fast);
+/*  OptionAdd(&opt,"fast",'x',&fast);  */
 
   OptionAdd( &opt, "nowait", 'x', &scannowait);
   OptionAdd(&opt,"sb",'i',&sbm);
@@ -269,15 +269,6 @@ int main(int argc,char *argv[]) {
     exit (1);
   }
 
-  if (fast) {
-    cp=151;
-    scnsc=60;
-    scnus=0;
-  } else {
-    scnsc=120;
-    scnus=0;
-  }
-
   beams=abs(ebm-sbm)+1;
   if (scannowait==0) {
     total_scan_usecs=(scnsc-3)*1E6+scnus;
@@ -290,8 +281,7 @@ int main(int argc,char *argv[]) {
 
   txpl=(rsep*20)/3;
 
-  if (fast) sprintf(progname,"normalscan (fast)");
-  else sprintf(progname,"normalscan");
+ sprintf(progname,"icescan");
 
 
 
@@ -348,7 +338,7 @@ int main(int argc,char *argv[]) {
       if (bmnum>ebm) bmnum=sbm;
     }
 
-    // Logic to change frequency band on every scan
+    /* Logic to change frequency band on every scan */
     if (freqcnt<2) {
         freqcnt++;
         stfrq=icefreqs[freqcnt];
