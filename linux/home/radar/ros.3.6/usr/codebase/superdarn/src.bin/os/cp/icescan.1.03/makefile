@@ -1,6 +1,6 @@
 # Makefile for icescan
 # =======================
-# Origin from makefile for normalcan
+# Origin from makefile for normalscan
 # by R.J.Barnes
 #
 #
