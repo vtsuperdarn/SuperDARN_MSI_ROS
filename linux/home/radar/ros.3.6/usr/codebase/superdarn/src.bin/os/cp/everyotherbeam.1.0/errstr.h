@@ -1,5 +1,5 @@
-/* errstr.h
-   ========
+/* errstr.h 
+   ======== 
    Author: R.J.Barnes
 */
 
