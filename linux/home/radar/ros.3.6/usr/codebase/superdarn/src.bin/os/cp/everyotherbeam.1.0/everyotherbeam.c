@@ -65,6 +65,10 @@ char progid[80] = {"everyotherbeam"};
 char progname[256];
 int arg=0;
 struct OptionData opt;
+
+char *roshost=NULL;
+char *droshost={"127.0.0.1"};
+
 int baseport = 44100;
 struct TCPIPMsgHost errlog  = {"127.0.0.1",44100,-1};
 struct TCPIPMsgHost shell   = {"127.0.0.1",44101,-1};
@@ -184,9 +188,16 @@ int main(int argc,char *argv[]) {
   OptionAdd(&opt,"fixfrq",'i',&fixfrq);   /* fix the transmit frequency */
   OptionAdd(&opt,"-help", 'x',&hlp);      /* just dump some parameters */
 
+  /* fhr added parameter(s) */
+  OptionAdd(&opt,"ros",'t',&roshost);   /* Set the roshost IP address */
+
   /* Process all of the command line options
       Important: need to do this here because we need stid and ststr */
   arg = OptionProcess(1,argc,argv,&opt,NULL);
+
+  if (roshost==NULL) roshost=getenv("ROSHOST");
+  if (roshost==NULL) roshost=droshost;
+
 
   /* specify beams right here assuming the following: */
   /* scnsc=120; scnus=0;    */
@@ -254,7 +265,7 @@ int main(int argc,char *argv[]) {
   ErrLog(errlog.sock,progname,logtxt);
 
   /* IMPORTANT: sbm and ebm are reset by this function */
-  SiteStart();
+  SiteStart(roshost);
 
   /* Reprocess the command line to restore desired parameters */
   arg = OptionProcess(1,argc,argv,&opt,NULL);
