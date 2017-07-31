@@ -140,8 +140,6 @@ int main(int argc,char *argv[]) {
   int *bms;           /* scanning beams                                     */
   int intgt[20];      /* start times of each integration period             */
   int nintgs=20;      /* number of integration periods per scan; SGS 1-min  */
-  int bufsc=0;        /* a buffer at the end of scan; historically this has */
-  int bufus=0;        /*  been set to 3.0s to account for what???           */
   unsigned char hlp=0;
 
   /*
@@ -241,7 +239,8 @@ int main(int argc,char *argv[]) {
   /* rst/usr/codebase/superdarn/src.lib/os/site.1.3/src/build.c */
   /* note that stid is a global variable set in the previous function...
       rst/usr/codebase/superdarn/src.lib/os/ops.1.10/src/global.c */
-  if ((status = SiteBuild(stid)) == -1) {
+  status = SiteBuild(ststr,NULL);
+  if (status==-1) {
     fprintf(stderr,"Could not identify station.\n");
     exit(1);
   }
