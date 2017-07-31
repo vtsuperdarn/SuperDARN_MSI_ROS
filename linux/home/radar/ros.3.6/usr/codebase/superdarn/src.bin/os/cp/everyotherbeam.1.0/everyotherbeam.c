@@ -58,7 +58,6 @@
 #include "siteglobal.h"
 
 char *ststr = NULL;
-                                                              1,1           Top
 char *dfststr = "tst";
 void *tmpbuf;
 size_t tmpsze;
@@ -146,16 +145,16 @@ int main(int argc,char *argv[]) {
   unsigned char hlp=0;
 
   /*
-    beam sequences for 24-beam MSI radars but only using 20 most meridional
+    beam sequences for 24-beam (fhr is 22 beams) MSI radars but only using 20 most meridional
       beams; also hard-coding the camping beam for each radar for this mode.
-      cve: 0 to 20 with camp on 10
-      cvw: 23 to 3 with camp on 11
+      fhe: 0 to 20 with camp on 10
+      fhw: 21 to 1 with camp on 11
 
     note the absence of sampling the camping beam 3-consecutive scans
    */
   /* count         1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 */
   int bmse[20] = { 0,10, 2,10, 4,10, 6,10, 8,10,12,10,14,10,16,10,18,10,20,10};
-  int bmsw[20] = {23,11,21,11,19,11,17,11,15,11,13,11, 9,11, 7,11, 5,11, 3,11};
+  int bmsw[20] = {21,11,19,11,17,11,15,11,13,11,9,11, 7,11, 5,11, 3,11, 1,11};
 
   /* standard radar defaults */
   cp     = 1231;    /* new CPID */
@@ -201,9 +200,9 @@ int main(int argc,char *argv[]) {
     intgt[i] = i*(intsc + intus*1e-6);
 
   /* Point to the beams here */
-  if (strcmp(ststr,"cve") == 0) {
+  if (strcmp(ststr,"fhe") == 0) {
     bms = bmse;   /* 1-min sequence */
-  } else if (strcmp(ststr,"cvw") == 0) {
+  } else if (strcmp(ststr,"fhw") == 0) {
     bms = bmsw;   /* 1-min sequence */
   } else {
     printf("Error: Not intended for station %s\n", ststr);
