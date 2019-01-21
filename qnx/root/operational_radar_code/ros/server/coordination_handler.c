@@ -148,11 +148,10 @@ void *coordination_handler(struct ControlProgram *control_program)
           trigger_state=2; //trigger
 /*
  *             trigger_type:  0: free run  1: elapsed-time  2: gps
- */       
+ */
           usleep(1000);
           gettimeofday(&t_pre_end,NULL);
-          if (verbose > 1) { 
-              elapsed=(t_pre_end.tv_sec-t_pre_start.tv_sec)*1E6;
+          if (verbose > 1) {               elapsed=(t_pre_end.tv_sec-t_pre_start.tv_sec)*1E6;
               elapsed+=(t_pre_end.tv_usec-t_pre_start.tv_usec);
               fprintf(stderr,"Coord: Pre-Trigger Thread Run Elapsed Microseconds: %10ld :: sec: %10d usec: %10d\n",elapsed,t_pre_end.tv_sec,t_pre_end.tv_usec);
 	      fflush(stderr);
@@ -160,7 +159,7 @@ void *coordination_handler(struct ControlProgram *control_program)
           gettimeofday(&t3,NULL);
           rc = pthread_create(&threads[0], NULL, (void *) &timing_trigger, (void *)trigger_type);
           pthread_join(threads[0],NULL);
-          if (verbose > 1) { 
+          if (verbose > 1) {
             gettimeofday(&t4,NULL);
             elapsed=(t4.tv_sec-t3.tv_sec)*1E6;
             elapsed+=(t4.tv_usec-t3.tv_usec);
