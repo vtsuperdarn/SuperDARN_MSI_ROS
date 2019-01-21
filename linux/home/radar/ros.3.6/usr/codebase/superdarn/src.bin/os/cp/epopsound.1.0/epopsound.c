@@ -163,7 +163,7 @@ int main(int argc,char *argv[]) {
   printf("Size of Struct SiteSettings  %d\n",(int)sizeof(struct SiteSettings));
 
   cp=3372;
-  intsc=0;      /* Picked to be small enough to get 1 second beacm switching resolution */
+  intsc=1;      /* Picked to be small enough to get 1 second beacm switching resolution */
   intus=900000;
   mppul=8;
   mplgs=23;
