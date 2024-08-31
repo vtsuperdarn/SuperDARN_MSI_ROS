@@ -437,7 +437,7 @@ int SiteFhwFCLR(int stfreq,int edfreq) {
   TCPIPMsgRecv(sock,&noise, sizeof(float));
   TCPIPMsgRecv(sock,&rmsg, sizeof(struct ROSMsg));
   if (debug) {
-    fprintf(stderr,"REQUEST_ASSIGNED_FREQ:type=%c\n",rmsg.status);
+    fprintf(stderr,"REQUEST_ASSIGNED_FREQ:type=%c\n",rmsg.type);
     fprintf(stderr,"REQUEST_ASSIGNED_FREQ:status=%d\n",rmsg.status);
   }
 
@@ -1002,7 +1002,7 @@ usleep(usecs);
     /* copy samples here */
 
       seqoff[nave]=iqsze/2;/*Sequence offset in 16bit units */
-      seqsze[nave]=dprm.samples*2*2; /* Sequence length in 16bit units */
+      seqsze[nave]=total_samples*2*2; /* Sequence length in 16bit units */
 
       if(seqbadtr[nave].start!=NULL)  free(seqbadtr[nave].start);
       if(seqbadtr[nave].length!=NULL) free(seqbadtr[nave].length);
@@ -1026,15 +1026,15 @@ usleep(usecs);
 
       dest = (void *)(samples);  /* look iqoff bytes into samples area */
       dest+=iqoff;
-      if ((iqoff+dprm.samples*2*sizeof(uint32) )<IQBUFSIZE) {
-        memmove(dest,rdata.main,dprm.samples*sizeof(uint32));
-        dest += dprm.samples*sizeof(uint32); /* skip ahead number of samples * 32 bit per sample to account for rdata.main*/
-        memmove(dest,rdata.back,dprm.samples*sizeof(uint32));
+      if ((iqoff+total_samples*2*sizeof(uint32) )<IQBUFSIZE) {
+        memmove(dest,rdata.main,total_samples*sizeof(uint32));
+        dest += total_samples*sizeof(uint32); /* skip ahead number of samples * 32 bit per sample to account for rdata.main*/
+        memmove(dest,rdata.back,total_samples*sizeof(uint32));
       } else {
         fprintf(stderr,"IQ Buffer overrun in SiteFhwIntegrate\n");
         fflush(stderr);
       }
-      iqsze+=dprm.samples*sizeof(uint32)*2;  /*  Total of number bytes so far copied into samples array */
+      iqsze+=total_samples*sizeof(uint32)*2;  /*  Total of number bytes so far copied into samples array */
       if (debug) {
         fprintf(stderr,"FHW seq %d :: ioff: %8d\n",nave,iqoff);
         fprintf(stderr,"FHW seq %d :: rdata.main 16bit :\n",nave);
@@ -1050,7 +1050,7 @@ usleep(usecs);
         fprintf(stderr,"FHW seq %d :: rdata.back 16bit 8-11: %8d %8d %8d %8d\n",nave,
            ((int16 *)rdata.back)[8],((int16 *)rdata.back)[9],
            ((int16 *)rdata.back)[10],((int16 *)rdata.back)[11]);
-        dest += dprm.samples*4;
+        dest += total_samples*4;
         fprintf(stderr,"FHW seq %d :: samples    16bit 8-11: %8d %8d %8d %8d\n",nave,
            ((int16 *)dest)[8],((int16 *)dest)[9],
            ((int16 *)dest)[10],((int16 *)dest)[11]);
@@ -1086,17 +1086,13 @@ usleep(usecs);
                          roff,ioff,mplgs,lagtable,xcfd,XCF_PART,2*total_samples,
                          badrng,seqatten[nave]*atstp,NULL);
         }
-        if ((nave>0) && (seqatten[nave] !=seqatten[nave])) {
-        if (debug)
-        fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
-        if (debug)
-          fprintf(stderr,"FHW seq %d :: ACFNormalize\n",nave);
-              ACFNormalize(pwr0,acfd,xcfd,tsgprm.nrang,mplgs,atstp);
+        if ((nave>0) && (seqatten[nave] != seqatten[nave-1])) {
+            if (debug) fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
+            if (debug) fprintf(stderr,"FHW seq %d :: ACFNormalize\n",nave);
+            ACFNormalize(pwr0,acfd,xcfd,tsgprm.nrang,mplgs,atstp);
         }
         if (debug)
         fprintf(stderr,"FHW seq %d :: rngoff %d rxchn %d\n",nave,rngoff,rxchn);
-
-
       }
       nave++;
       iqoff=iqsze;  /* set the offset bytes for the next sequence */
@@ -1192,7 +1188,7 @@ int SiteFhwEndScan(int bsc,int bus) {
     }
     count++;
     SiteFhwExit(0);
-    usleep(50000);
+    usleep(5000);
     SiteFhwExit(0);
     gettimeofday(&tick,NULL);
   }

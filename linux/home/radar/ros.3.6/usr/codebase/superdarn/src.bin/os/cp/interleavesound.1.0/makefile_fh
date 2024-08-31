@@ -1,15 +1,15 @@
-# Makefile for normalsound_fh
-# ===========================
+# Makefile for interleavesound_fh
+# ===============================
 #
 
 include $(MAKECFG).$(SYSTEM)
 
 INCLUDE=-I$(IPATH)/base -I$(IPATH)/general -I$(IPATH)/superdarn \
         -I$(USR_IPATH)/superdarn
-OBJS = normalsound.o sndwrite.o
-SRC=normalsound.c sndwrite.c sndwrite.h
+OBJS = interleavesound.o sndwrite.o
+SRC=interleavesound.c sndwrite.c sndwrite.h
 DSTPATH = $(USR_BINPATH)
-OUTPUT = normalsound
+OUTPUT = interleavesound
 LIBS= -lsite.1 \
       -lsite.fhe.1 -lsite.fhw.1 -lradarshell.1 -lshmem.1 -lops.1 \
       -lrmsgsnd.1 -ltcpipmsg.1 -lerrlog.1 -lfreq.1 -lacfex.1 -lacf.1 \

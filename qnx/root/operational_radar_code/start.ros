@@ -1,14 +1,20 @@
 #!/bin/sh
 DEV_DIR=/root/operational_radar_code/ros/
 currtime=`date -t -u`
+date_now=`date +"%Y%m%d.%H%M"`
 $DEV_DIR/latency_test/latency_test 100 1000000
 slay -f _gc314FS
 slay -f _ics660-drv
 nohup $DEV_DIR/gps_tcp_driver/gps_tcp_driver > /dev/null 2>&1 &
+##nohup $DEV_DIR/gps_tcp_driver/gps_tcp_driver > /tmp/gps.${currtime}.log 2>&1 &
+#nohup $DEV_DIR/gps_tcp_driver/gps_tcp_driver > /tmp/gps.${date_now}.log 2>&1 &
 sleep 3
+#$DEV_DIR/ics660_drv/_ics660-drv 0 > /tmp/ics660.${date_now}.log 2>&1 &
 $DEV_DIR/ics660_drv/_ics660-drv 0 > /dev/null 2>&1 &
 $DEV_DIR/gc314FS_driver.1.31/_gc314FS 0 1> /dev/null 2>&1 &
 $DEV_DIR/gc314FS_driver.1.31/_gc314FS 1 1> /dev/null 2>&1 &   
+#$DEV_DIR/gc314FS_driver.1.31/_gc314FS 0 1> /tmp/gc314FS.${date_now}.0.log 2>&1 &
+#$DEV_DIR/gc314FS_driver.1.31/_gc314FS 1 1> /tmp/gc314FS.${date_now}.1.log 2>&1 &
 sleep 3
 nohup $DEV_DIR/timing_tcp_driver/timing_tcp_driver > /dev/null 2>&1 &
 nohup $DEV_DIR/dio_tcp_driver/dio_tcp_driver > /dev/null 2>&1  &

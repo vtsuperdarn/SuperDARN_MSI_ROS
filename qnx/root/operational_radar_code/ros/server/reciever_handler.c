@@ -59,10 +59,10 @@ void *receiver_rxfe_settings(void *arg) {
     send_data(recvsock, &site_settings->ifmode, sizeof(site_settings->ifmode));
     send_data(recvsock, &site_settings->rf_settings, sizeof(struct RXFESettings));
     send_data(recvsock, &site_settings->if_settings, sizeof(struct RXFESettings));
-    recv_data(recvsock, &msg, sizeof(struct DriverMsg));                                    
-  }                                                                                        
+    recv_data(recvsock, &msg, sizeof(struct DriverMsg));
+  }
   pthread_mutex_unlock(&recv_comm_lock);
-}                                                           
+}
 
 void receiver_assign_frequency(struct ControlProgram *arg){
 
@@ -73,19 +73,19 @@ void receiver_assign_frequency(struct ControlProgram *arg){
 	int ncfs, nfreq;
 	int blacklist_count=0;
 	int numclients=0;
-	int best_index=0; 
+	int best_index=0;
 	int finding_best=0;
 	int finding_current=0;
 	int assigning_best=0;
 	int assigning_current=0;
 	int padded_tx_sideband,padded_rx_sideband; //in KHz
-        int detrend_enabled=0; 
+        int detrend_enabled=0;
         int separation_enabled=1,minimum_separation=0; /* JDS : 20110422 : Added to coerce controlprogram blacklist window to minimum separation in ini file */
-	int detrend_sideband=0; 
+	int detrend_sideband=0;
 	/* Variables for FFT diagnostic output
 	*  This is a temporary diagnostic format and is not be documented.
-	*  The format of the file will change based on testing needs. 
-	*  TODO: re-implement as part of general diagnostic viewer for the ROS */ 
+	*  The format of the file will change based on testing needs.
+	*  TODO: re-implement as part of general diagnostic viewer for the ROS */
 	int f_fft=-1;
 	FILE *ftest=NULL;
 	char data_file[255],test_file[255],strtemp[255];
@@ -95,7 +95,7 @@ void receiver_assign_frequency(struct ControlProgram *arg){
 	float tempf;
 	int offset;
 
-	/* SGS: where does stderr go? 
+	/* SGS: where does stderr go?
 	*  http://en.wikipedia.org/wiki/Standard_streams
         */
         if(verbose > 1) {
@@ -108,8 +108,8 @@ void receiver_assign_frequency(struct ControlProgram *arg){
 	}
 
 	/* abort if no FFT data */
-	if(arg->state->fft_array==NULL) { 
-		fprintf(stderr,"Error in assigning frequency function\n"); 
+	if(arg->state->fft_array==NULL) {
+		fprintf(stderr,"Error in assigning frequency function\n");
 		pthread_exit(NULL);
 	}
 
@@ -119,6 +119,8 @@ void receiver_assign_frequency(struct ControlProgram *arg){
 	/* If requested setup fft diagnostic file */
 	ftest=fopen(test_file, "r");
 	if(ftest!=NULL){
+        // First, setup the output filename with the current date and
+        // time stamp
 		fclose(ftest);
 		data_file[0]='\0';
 		clock_gettime(CLOCK_REALTIME, &time_now);
@@ -147,7 +149,7 @@ void receiver_assign_frequency(struct ControlProgram *arg){
        		//ltoa(temp,strtemp,10);
        		//if(temp<10) strcat(data_file, "0");
        		strcat(data_file, strtemp);
-    		// data file every 5 minutes 
+    		// data file every 5 minutes
        		temp=(int)time_struct->tm_min;
        		temp=((int)(temp/5))*5;
                 sprintf(strtemp,"%02d",temp);
@@ -164,7 +166,8 @@ void receiver_assign_frequency(struct ControlProgram *arg){
        		f_fft=open(data_file, O_WRONLY|O_CREAT|O_NONBLOCK|O_APPEND, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
   	}
 
-	/* Write Diagnostic header info */ 
+	/* Write diagnostic header info if open file error code
+       was good from above */
  	if(f_fft>=0){
          	temp=(int)time_struct->tm_year+1900;
          	write(f_fft, &temp, sizeof(int32_t));
@@ -199,18 +202,18 @@ void receiver_assign_frequency(struct ControlProgram *arg){
          	write(f_fft, &temp, sizeof(int32_t));
          	tempf=arg->clrfreqsearch.filter_bandwidth;
          	write(f_fft, &tempf, sizeof(float));
-  	}         
+  	}
 
 
   /* Note here from Jeff, the FFT is typically performed on N = 2^n samples
    * so the size of the FFT window is typically larger than the band from
    * which we are selecting frequencies from.  This is however not a garuntee.
    * Each reciever driver is responsible for handling the details of how the fft is performed
-   * based on the bandwidth limitation imposed on the reciever hardware. 
+   * based on the bandwidth limitation imposed on the reciever hardware.
    * It cannot be assumed that the reciever driver was able to return a clear frequency search
-   * encompassing the requested band.  
-   * 
-   * For current operational purposes a receiver driver is required to send 
+   * encompassing the requested band.
+   *
+   * For current operational purposes a receiver driver is required to send
    * back an FFT in 1 kHz bins (see the clear frequency search function for
    * specifics). Both the gc214 and the gc31X drivers comply with this
    * implicit assumption */
@@ -220,22 +223,22 @@ void receiver_assign_frequency(struct ControlProgram *arg){
   memcpy(fft_array,arg->state->fft_array,arg->state->N*sizeof(t_fft_index));
 
   /* the padded sidebands account for the finite bandwidths associated with
-   * transmitters and receivers for a requested pulse sequence.  
+   * transmitters and receivers for a requested pulse sequence.
    * Minimum sideband is currently set to 0 kHz.
    * These values will be used for two things:
-   * 1) noise calculation for a pulse sequence relavent bandwidth 	
-   * 2) impose adequate spacing for frequency assignment in multiple controlprogram 
+   * 1) noise calculation for a pulse sequence relavent bandwidth
+   * 2) impose adequate spacing for frequency assignment in multiple controlprogram
    *     operation scenarios to avoid cross-contamination of signals
 
    * Note that it is padded_rx_sideband which is most critical as it is anticipated
    * that receiver bandwidth can be higher than transmit when using
-   * oversampling modes. 
+   * oversampling modes.
    * There is room for improvement here...
    * TODO: 1.) include a parameter which allows a controlprogram to explicitly
-   *           override the fft 
+   *           override the fft
    *       2.) smoothing separate from the sideband use for blacklisting an
    *           assigned frequency window
-   */ 
+   */
   /* padded_tx_sideband defined but unused currently */
   padded_tx_sideband = MAX(2*ceil(arg->parameters->baseband_samplerate/1000.0),0);
   /* TODO: optimize padded_rx_sideband  to account for over sampling and wide-band modes*/

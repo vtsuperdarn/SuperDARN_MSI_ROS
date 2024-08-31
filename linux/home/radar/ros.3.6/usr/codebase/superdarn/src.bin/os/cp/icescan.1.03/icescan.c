@@ -71,6 +71,8 @@
 #include "rosmsg.h"
 #include "tsg.h"
 
+#include <math.h>
+
 char *ststr=NULL;
 char *dfststr="tst";
 
@@ -144,19 +146,32 @@ int main(int argc,char *argv[]) {
   int cnt=0;
 
 /*  unsigned char fast=0; */
+  unsigned char slow=0;
   unsigned char discretion=0;
+  unsigned char fixed=0;
 
   int status=0,n;
 
   int beams=0;
   int total_scan_usecs=0;
   int total_integration_usecs=0;
-  int fixfrq=-1;
 
   /* Icescan specific parameters  */
-  int icefreqs[3]={10200, 12600, 14400};
+  /*int icefreqs[3]={10200, 12600, 14400};*/
+  int icefreqs[10]={10300, 10775, 11550, 11975, 12425, 12850, 13600, 14500, 15250, 15850};
+  int icefixedfreqs[10]={10250, 10725, 11500, 11925, 12375, 12800, 13550, 14450, 15200, 15800};
 /*  int scancnt=0;  Useful if not wanting to change frequency after more than each scan*/
   int freqcnt=0;
+  int nfreqs=10;
+
+  /* Flag to override auto-cal of integration time */
+  int setintt=0;
+
+  /* Flag and variables to better sync beam soudnings */
+  int bm_sync=0;
+  int bmsc=6;
+  int bmus=0;
+
 
   printf("Size of int %d\n",(int)sizeof(int));
   printf("Size of long %d\n",(int)sizeof(long));
@@ -195,7 +210,6 @@ int main(int argc,char *argv[]) {
   OptionAdd( &opt, "nt", 'i', &night);
   OptionAdd( &opt, "df", 'i', &dfrq);
   OptionAdd( &opt, "nf", 'i', &nfrq);
-  OptionAdd( &opt, "fixfrq", 'i', &fixfrq);
   OptionAdd( &opt, "xcf", 'i', &xcnt);
 
   OptionAdd(&opt,"ep",'i',&errlog.port);
@@ -208,12 +222,22 @@ int main(int argc,char *argv[]) {
   OptionAdd(&opt,"stid",'t',&ststr);
 
 /*  OptionAdd(&opt,"fast",'x',&fast);  */
+  OptionAdd(&opt,"slow",'x',&slow);
 
   OptionAdd( &opt, "nowait", 'x', &scannowait);
   OptionAdd(&opt,"sb",'i',&sbm);
   OptionAdd(&opt,"eb",'i',&ebm);
   OptionAdd(&opt,"c",'i',&cnum);
 
+  OptionAdd(&opt,"intsc",'i',&intsc);
+  OptionAdd(&opt,"intus",'i',&intus);
+  OptionAdd(&opt,"setintt",'x',&setintt);
+
+  OptionAdd(&opt,"bm_sync",'x',&bm_sync);
+  OptionAdd(&opt,"bmsc",'i',&bmsc);
+  OptionAdd(&opt,"bmus",'i',&bmus);
+
+  OptionAdd(&opt,"fixed",'x',&fixed);
 
   arg=OptionProcess(1,argc,argv,&opt,NULL);
 
@@ -252,7 +276,7 @@ int main(int argc,char *argv[]) {
   OpsSetupCommand(argc,argv);
   OpsSetupShell();
 
-  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l",                        
+  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l",
                   &sbm,&ebm,
                   &dfrq,&nfrq,
                   &dfrang,&nfrang,
@@ -269,8 +293,14 @@ int main(int argc,char *argv[]) {
     exit (1);
   }
 
+  if (slow) {
+    cp=1201;
+    scnsc=120;
+    scnus=0;
+  }
+
   beams=abs(ebm-sbm)+1;
-  if (scannowait==0) {
+  if ((scannowait==0) && (setintt==0)) {
     total_scan_usecs=(scnsc-3)*1E6+scnus;
     total_integration_usecs=total_scan_usecs/beams;
     intsc=total_integration_usecs/1E6;
@@ -281,8 +311,11 @@ int main(int argc,char *argv[]) {
 
   txpl=(rsep*20)/3;
 
- sprintf(progname,"icescan");
-
+  if (slow) {
+    sprintf(progname,"icescan (slow)");
+  } else {
+    sprintf(progname,"icescan");
+  }
 
 
   OpsLogStart(errlog.sock,progname,argc,argv);
@@ -301,6 +334,15 @@ int main(int argc,char *argv[]) {
   printf("Preparing SiteTimeSeq Station ID: %s  %d\n",ststr,stid);
 
   tsgid=SiteTimeSeq(ptab);
+
+  skip=OpsFindSkip(scnsc,scnus);
+  if (backward) {
+    bmnum=sbm-skip-1;  /* An extra one to ensure not overrunning scan boundary */
+    if (bmnum<ebm) bmnum=sbm;
+  } else {
+    bmnum=sbm+skip+1;  /* An extra one to ensure not overrunning scan boundary */
+    if (bmnum>ebm) bmnum=sbm;
+  }
 
   printf("Entering Scan loop Station ID: %s  %d\n",ststr,stid);
   do {
@@ -328,24 +370,26 @@ int main(int argc,char *argv[]) {
       } else xcf=0;
     } else xcf=0;
 
-    skip=OpsFindSkip(scnsc,scnus);
-
-    if (backward) {
-      bmnum=sbm-skip;
-      if (bmnum<ebm) bmnum=sbm;
-    } else {
-      bmnum=sbm+skip;
-      if (bmnum>ebm) bmnum=sbm;
-    }
-
     /* Logic to change frequency band on every scan */
-    if (freqcnt<2) {
+/*    if (freqcnt<2) {
         freqcnt++;
         stfrq=icefreqs[freqcnt];
     } else {
         freqcnt=0;
         stfrq=icefreqs[0];
     }
+*/
+    TimeReadClock(&yr,&mo,&dy,&hr,&mt,&sc,&us);
+/*    freqcnt=mt % (scnsc/60*nfreqs); */
+/*    freqcnt=floor((mt%20)/2; */
+    freqcnt = mt*60/scnsc % nfreqs;
+    if (fixed) {
+        stfrq=icefixedfreqs[freqcnt];
+    } else {
+        stfrq=icefreqs[freqcnt];
+    }
+/* Better way to do frequency band index change, but doesn't sync */
+/*    freqcnt=(freqcnt == nfreqs-1) ? 0 : freqcnt+1; */
 
     do {
 
@@ -357,11 +401,6 @@ int main(int argc,char *argv[]) {
       } else {
         mpinc=nmpinc;
         frang=nfrang;
-      }
-      if(fixfrq>0) {
-        stfrq=fixfrq;
-        tfreq=fixfrq;
-        noise=0;
       }
       sprintf(logtxt,"Integrating beam:%d intt:%ds.%dus (%d:%d:%d:%d)",bmnum,
                       intsc,intus,hr,mt,sc,us);
@@ -377,8 +416,9 @@ int main(int argc,char *argv[]) {
       sprintf(logtxt, "FRQ: %d %d", stfrq, frqrng);
       ErrLog(errlog.sock,progname, logtxt);
 
-      if(fixfrq<0) {
-        tfreq=SiteFCLR(stfrq,stfrq+frqrng);
+      tfreq=SiteFCLR(stfrq,stfrq+frqrng);
+      if (fixed) {
+        tfreq=stfrq;
       }
       sprintf(logtxt,"Transmitting on: %d (Noise=%g)",tfreq,noise);
       ErrLog(errlog.sock,progname,logtxt);
@@ -445,8 +485,15 @@ int main(int argc,char *argv[]) {
       if (backward) bmnum--;
       else bmnum++;
 
+      if (bm_sync==1){
+        ErrLog(errlog.sock,progname,"Syncing to beam timing");
+        SiteEndScan(bmsc,bmus);
+      }
+
+
     } while (1);
 
+    bmnum=sbm;
     ErrLog(errlog.sock,progname,"Waiting for scan boundary.");
     if ((exitpoll==0) && (scannowait==0)) SiteEndScan(scnsc,scnus);
   } while (exitpoll==0);

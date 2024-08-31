@@ -1,6 +1,6 @@
-/* normalscan.c
+/* stepcamp.c
    ============
-   Author: R.J.Barnes & J.Spaleta
+   Author: R.J.Barnes, J.Spaleta, & K.T. Sterne
 */
 
 /*
@@ -28,6 +28,8 @@
 */
 
 
+#include <netinet/in.h>
+#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -76,7 +78,7 @@ char *dfststr="tst";
 void *tmpbuf;
 size_t tmpsze;
 
-char progid[80]={"normalscan"};
+char progid[80]={"stepcamp"};
 char progname[256];
 
 int arg=0;
@@ -90,6 +92,9 @@ int baseport=44100;
 struct TCPIPMsgHost errlog={"127.0.0.1",44100,-1};
 
 struct TCPIPMsgHost shell={"127.0.0.1",44101,-1};
+
+struct TCPIPMsgHost freqcoord={"127.0.0.1",44110,-1};
+
 
 int tnum=4;
 struct TCPIPMsgHost task[4]={
@@ -137,12 +142,11 @@ int main(int argc,char *argv[]) {
   int exitpoll=0;
   int scannowait=0;
 
-  int scnsc=120;
+  int scnsc=60;
   int scnus=0;
   int skip;
   int cnt=0;
 
-  unsigned char fast=0;
   unsigned char discretion=0;
 
   int status=0,n;
@@ -159,6 +163,15 @@ int main(int argc,char *argv[]) {
   int bmsc=6;
   int bmus=0;
 
+  int camp_count=0;  /* Counting variable for camp count */
+  int camp_num=10;   /* Number of times to camp */
+
+  int sock;
+  int freqport=0,arg=0;
+  socklen_t clength;
+  struct sockaddr_in server;
+  struct sockaddr_in client;
+  int msgsock=0;
 
   printf("Size of int %d\n",(int)sizeof(int));
   printf("Size of long %d\n",(int)sizeof(long));
@@ -174,8 +187,8 @@ int main(int argc,char *argv[]) {
   printf("Size of Struct TSGprm  %d\n",(int)sizeof(struct TSGprm));
   printf("Size of Struct SiteSettings  %d\n",(int)sizeof(struct SiteSettings));
 
-  cp=150;
-  intsc=7; /* Set default integration time for normalscan (slow) */
+  cp=1241;
+  intsc=6; /* Set default integration time for stepcamp (slow) */
   intus=0; /* Integration time is dynamically calculated below based on the numbuer of beams. */
   mppul=8;
   mplgs=23;
@@ -209,8 +222,6 @@ int main(int argc,char *argv[]) {
 
   OptionAdd(&opt,"stid",'t',&ststr);
 
-  OptionAdd(&opt,"fast",'x',&fast);
-
   OptionAdd( &opt, "nowait", 'x', &scannowait);
   OptionAdd(&opt,"sb",'i',&sbm);
   OptionAdd(&opt,"eb",'i',&ebm);
@@ -224,6 +235,9 @@ int main(int argc,char *argv[]) {
   OptionAdd(&opt,"bmsc",'i',&bmsc);
   OptionAdd(&opt,"bmus",'i',&bmus);
 
+  OptionAdd(&opt,"freqport",'i',&freqport);
+
+  OptionAdd(&opt,"camp_num",'i',&camp_num);
 
   arg=OptionProcess(1,argc,argv,&opt,NULL);
 
@@ -238,6 +252,10 @@ int main(int argc,char *argv[]) {
 
   if ((shell.sock=TCPIPMsgOpen(shell.host,shell.port))==-1) {
     fprintf(stderr,"Error connecting to shell.\n");
+  }
+
+  if ((freqcoord.sock=TCPIPMsgOpen(freqcoord.host,freqport))==-1 && freqport!=0) {
+    fprintf(stderr,"Error connecting to frequency coord.\n");
   }
 
   for (n=0;n<tnum;n++) task[n].port+=baseport;
@@ -256,6 +274,43 @@ int main(int argc,char *argv[]) {
 
   printf("Station ID: %s  %d\n",ststr,stid);
 
+  /* Only do this if wanting to broadcast frequency */
+/*  if (freqport !=0) { */
+    /* Setting up freq coord socket */
+/*    sock=socket(AF_INET,SOCK_STREAM,0);
+    if (sock<0) {
+        fprintf(stderr,"opening stream socket\n");
+        exit(1);
+    }
+
+    server.sin_family=AF_INET;
+    server.sin_addr.s_addr=INADDR_ANY;
+    if (freqport !=0) server.sin_port=htons(freqport);
+    else server.sin_port=0;
+
+    if (bind(sock,(struct sockaddr *) &server,sizeof(server))){
+        fprintf(stderr,"binding stream socket\n");
+        exit(1);
+    }
+
+    listen(sock,5);
+
+    fprintf(stderr,"Accepting a new connection....\n");
+    clength=sizeof(client);
+    msgsock=accept(sock,(struct sockaddr *) &client, &clength);
+    */
+    /* Use ROS functions? */
+/*    msgsock=TCPIPMsgOpen(freqcoord,freqport);
+    if (msgsock==-1) {
+        fprintf(stderr,"Error attaching to 127.0.0.1:%d",freqport);
+    } else {
+        fprintf(stderr,"Attached to 127.0.0.1:%d",freqport);
+    }
+
+
+
+  }*/
+
 
   strncpy(combf,progid,80);
 
@@ -273,37 +328,18 @@ int main(int argc,char *argv[]) {
   status=SiteSetupRadar();
 
   printf("Initial Setup Complete: Station ID: %s  %d\n",ststr,stid);
-
   if (status !=0) {
     ErrLog(errlog.sock,progname,"Error locating hardware.");
     exit (1);
   }
 
-  if (fast) {
-    cp=151;
-    scnsc=60;
-    scnus=0;
-  } else {
-    scnsc=120;
-    scnus=0;
-  }
-
   beams=abs(ebm-sbm)+1;
-  if ((scannowait==0) && (setintt==0)) {
-    total_scan_usecs=(scnsc-3)*1E6+scnus;
-    total_integration_usecs=total_scan_usecs/beams;
-    intsc=total_integration_usecs/1E6;
-    intus=total_integration_usecs -(intsc*1E6);
-  }
 
   if (discretion) cp= -cp;
 
   txpl=(rsep*20)/3;
 
-  if (fast) sprintf(progname,"normalscan (fast)");
-  else sprintf(progname,"normalscan");
-
-
+  sprintf(progname,"stepcamp");
 
   OpsLogStart(errlog.sock,progname,argc,argv);
 
@@ -315,25 +351,28 @@ int main(int argc,char *argv[]) {
   }
 
   printf("Preparing OpsFitACFStart Station ID: %s  %d\n",ststr,stid);
-
   OpsFitACFStart();
 
   printf("Preparing SiteTimeSeq Station ID: %s  %d\n",ststr,stid);
-
   tsgid=SiteTimeSeq(ptab);
 
+  /* Using the OpsFindSkip to figure out what camp_count
+     we should be using on initial startup */
   skip=OpsFindSkip(scnsc,scnus);
-  if (backward) {
-      bmnum=sbm-skip-1; /* An extra one to ensure not overruning scan boundary */
-      if (bmnum<ebm) bmnum=sbm;
+  camp_count=skip+1; /* To make sure we don't go over a scan boundary */
+
+  /* Figure out where in our beam looping we are
+     Pulls largely from OpsFindSkip, but can't use
+     that due to non-sequential beam sounding */
+  TimeReadClock(&yr,&mo,&dy,&hr,&mt,&sc,&us);
+  if (backward){
+      bmnum=sbm-(mt%beams);
   } else {
-      bmnum=sbm+skip+1; /* An extra one to ensure not overruning scan boundary */
-     if (bmnum>ebm) bmnum=sbm;
+      bmnum=sbm+(mt%beams);
   }
 
   printf("Entering Scan loop Station ID: %s  %d\n",ststr,stid);
   do {
-
     printf("Entering Site Start Scan Station ID: %s  %d\n",ststr,stid);
     if (SiteStartScan() !=0) continue;
 
@@ -381,7 +420,7 @@ int main(int argc,char *argv[]) {
 
       ErrLog(errlog.sock,progname,"Starting Integration.");
 
-    printf("Entering Site Start Intt Station ID: %s  %d\n",ststr,stid);
+      printf("Entering Site Start Intt Station ID: %s  %d\n",ststr,stid);
       SiteStartIntt(intsc,intus);
 
       ErrLog(errlog.sock,progname,"Doing clear frequency search.");
@@ -389,13 +428,15 @@ int main(int argc,char *argv[]) {
       sprintf(logtxt, "FRQ: %d %d", stfrq, frqrng);
       ErrLog(errlog.sock,progname, logtxt);
 
-      tfreq=SiteFCLR(stfrq,stfrq+frqrng);
-      if (!(fixfrq<0)){
-        ErrLog(errlog.sock,progname,"Fixing frequency");
-        tfreq=fixfrq;
+      if(fixfrq<0) {
+        tfreq=SiteFCLR(stfrq,stfrq+frqrng);
       }
       sprintf(logtxt,"Transmitting on: %d (Noise=%g)",tfreq,noise);
       ErrLog(errlog.sock,progname,logtxt);
+      /* Place to actually send out transmit frequency */
+      if (freqcoord.sock!=0) {
+          TCPIPMsgSend(freqcoord.sock,&tfreq,sizeof(tfreq));
+      }
 
       nave=SiteIntegrate(lags);
       if (nave<0) {
@@ -455,9 +496,8 @@ int main(int argc,char *argv[]) {
 
       if (exitpoll !=0) break;
       scan=0;
-      if (bmnum==ebm) break;
-      if (backward) bmnum--;
-      else bmnum++;
+      camp_count++;
+      if (camp_count==camp_num) break;
 
       if (bm_sync==1){
         ErrLog(errlog.sock,progname,"Syncing to beam timing");
@@ -466,14 +506,22 @@ int main(int argc,char *argv[]) {
 
     } while (1);
 
-    bmnum=sbm;
+    /* Reset camping counter */
+    camp_count=0;
+
+    if (backward) bmnum--;
+    else bmnum++;
+    if (bmnum<ebm) bmnum=sbm;
+
     ErrLog(errlog.sock,progname,"Waiting for scan boundary.");
     if ((exitpoll==0) && (scannowait==0)) SiteEndScan(scnsc,scnus);
   } while (exitpoll==0);
 
 
   for (n=0;n<tnum;n++) RMsgSndClose(task[n].sock);
-
+  if (msgsock!=0) {
+    close(msgsock);
+  }
 
   ErrLog(errlog.sock,progname,"Ending program.");
 

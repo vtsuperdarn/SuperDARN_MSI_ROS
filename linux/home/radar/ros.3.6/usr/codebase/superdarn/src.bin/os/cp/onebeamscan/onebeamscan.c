@@ -1,6 +1,8 @@
-/* normalscan.c
+/* onebeamscan.c
    ============
-   Author: R.J.Barnes & J.Spaleta
+   Author for normalscan (base of this code): R.J.Barnes & J.Spaleta
+   Modified by: K.T. Sterne
+
 */
 
 /*
@@ -35,6 +37,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <zlib.h>
+#include <math.h>
 #include "rtypes.h"
 #include "option.h"
 #include "rtime.h"
@@ -76,7 +79,7 @@ char *dfststr="tst";
 void *tmpbuf;
 size_t tmpsze;
 
-char progid[80]={"normalscan"};
+char progid[80]={"onebeamscan"};
 char progname[256];
 
 int arg=0;
@@ -137,28 +140,20 @@ int main(int argc,char *argv[]) {
   int exitpoll=0;
   int scannowait=0;
 
-  int scnsc=120;
+  int scnsc=60;
   int scnus=0;
   int skip;
   int cnt=0;
 
-  unsigned char fast=0;
   unsigned char discretion=0;
 
   int status=0,n;
 
-  int beams=0;
-  int total_scan_usecs=0;
-  int total_integration_usecs=0;
   int fixfrq=-1;
   /* Flag to override auto-calc of integration time */
   int setintt=0;
-
-  /* Flag and variables to better sync beam soundings */
-  int bm_sync=0;
-  int bmsc=6;
-  int bmus=0;
-
+  int onebeam=7;  /* Single beam to sound on, default beam 7 */
+  int num_sounds=0; /* Number of soundings to do, we'll compute this later */
 
   printf("Size of int %d\n",(int)sizeof(int));
   printf("Size of long %d\n",(int)sizeof(long));
@@ -174,9 +169,9 @@ int main(int argc,char *argv[]) {
   printf("Size of Struct TSGprm  %d\n",(int)sizeof(struct TSGprm));
   printf("Size of Struct SiteSettings  %d\n",(int)sizeof(struct SiteSettings));
 
-  cp=150;
-  intsc=7; /* Set default integration time for normalscan (slow) */
-  intus=0; /* Integration time is dynamically calculated below based on the numbuer of beams. */
+  cp=1240;
+  intsc=3; /* Set default integration time */
+  intus=0;
   mppul=8;
   mplgs=23;
   mpinc=1500;
@@ -209,8 +204,6 @@ int main(int argc,char *argv[]) {
 
   OptionAdd(&opt,"stid",'t',&ststr);
 
-  OptionAdd(&opt,"fast",'x',&fast);
-
   OptionAdd( &opt, "nowait", 'x', &scannowait);
   OptionAdd(&opt,"sb",'i',&sbm);
   OptionAdd(&opt,"eb",'i',&ebm);
@@ -219,11 +212,7 @@ int main(int argc,char *argv[]) {
   OptionAdd(&opt,"intsc",'i',&intsc);
   OptionAdd(&opt,"intus",'i',&intus);
   OptionAdd(&opt,"setintt",'x',&setintt);
-
-  OptionAdd(&opt,"bm_sync",'x',&bm_sync);
-  OptionAdd(&opt,"bmsc",'i',&bmsc);
-  OptionAdd(&opt,"bmus",'i',&bmus);
-
+  OptionAdd(&opt,"onebeam",'i',&onebeam);  /* Option to change the default beam */
 
   arg=OptionProcess(1,argc,argv,&opt,NULL);
 
@@ -241,6 +230,10 @@ int main(int argc,char *argv[]) {
   }
 
   for (n=0;n<tnum;n++) task[n].port+=baseport;
+
+  /* Lets compute the number of soundings in a "scan" as */
+  /* do want oo maintain scan boundary functionality */
+  num_sounds = floor((scnsc + scnus/100000)/(intsc + intus/100000));
 
   OpsStart(ststr);
 
@@ -262,12 +255,12 @@ int main(int argc,char *argv[]) {
   OpsSetupCommand(argc,argv);
   OpsSetupShell();
 
-  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l intsc l intus l",
+  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l intsc l intus l setintt l onebeam l",
                   &sbm,&ebm,
                   &dfrq,&nfrq,
                   &dfrang,&nfrang,
                   &dmpinc,&nmpinc,
-                  &frqrng,&xcnt,&intsc,&intus);
+                  &frqrng,&xcnt,&intsc,&intus,&setintt,&onebeam);
 
 
   status=SiteSetupRadar();
@@ -279,34 +272,13 @@ int main(int argc,char *argv[]) {
     exit (1);
   }
 
-  if (fast) {
-    cp=151;
-    scnsc=60;
-    scnus=0;
-  } else {
-    scnsc=120;
-    scnus=0;
-  }
-
-  beams=abs(ebm-sbm)+1;
-  if ((scannowait==0) && (setintt==0)) {
-    total_scan_usecs=(scnsc-3)*1E6+scnus;
-    total_integration_usecs=total_scan_usecs/beams;
-    intsc=total_integration_usecs/1E6;
-    intus=total_integration_usecs -(intsc*1E6);
-  }
-
   if (discretion) cp= -cp;
 
   txpl=(rsep*20)/3;
 
-  if (fast) sprintf(progname,"normalscan (fast)");
-  else sprintf(progname,"normalscan");
-
-
+  sprintf(progname,"onebeamscan");
 
   OpsLogStart(errlog.sock,progname,argc,argv);
-
   OpsSetupTask(tnum,task,errlog.sock,progname);
 
   for (n=0;n<tnum;n++) {
@@ -321,15 +293,6 @@ int main(int argc,char *argv[]) {
   printf("Preparing SiteTimeSeq Station ID: %s  %d\n",ststr,stid);
 
   tsgid=SiteTimeSeq(ptab);
-
-  skip=OpsFindSkip(scnsc,scnus);
-  if (backward) {
-      bmnum=sbm-skip-1; /* An extra one to ensure not overruning scan boundary */
-      if (bmnum<ebm) bmnum=sbm;
-  } else {
-      bmnum=sbm+skip+1; /* An extra one to ensure not overruning scan boundary */
-     if (bmnum>ebm) bmnum=sbm;
-  }
 
   printf("Entering Scan loop Station ID: %s  %d\n",ststr,stid);
   do {
@@ -346,6 +309,7 @@ int main(int argc,char *argv[]) {
     }
 
     scan=1;
+    skip=0;
 
     ErrLog(errlog.sock,progname,"Starting scan.");
 
@@ -356,6 +320,10 @@ int main(int argc,char *argv[]) {
         cnt=0;
       } else xcf=0;
     } else xcf=0;
+
+/*    skip=OpsFindSkip(scnsc,scnus); */
+
+    bmnum=onebeam;
 
     do {
 
@@ -381,7 +349,7 @@ int main(int argc,char *argv[]) {
 
       ErrLog(errlog.sock,progname,"Starting Integration.");
 
-    printf("Entering Site Start Intt Station ID: %s  %d\n",ststr,stid);
+      printf("Entering Site Start Intt Station ID: %s  %d\n",ststr,stid);
       SiteStartIntt(intsc,intus);
 
       ErrLog(errlog.sock,progname,"Doing clear frequency search.");
@@ -389,10 +357,8 @@ int main(int argc,char *argv[]) {
       sprintf(logtxt, "FRQ: %d %d", stfrq, frqrng);
       ErrLog(errlog.sock,progname, logtxt);
 
-      tfreq=SiteFCLR(stfrq,stfrq+frqrng);
-      if (!(fixfrq<0)){
-        ErrLog(errlog.sock,progname,"Fixing frequency");
-        tfreq=fixfrq;
+      if(fixfrq<0) {
+        tfreq=SiteFCLR(stfrq,stfrq+frqrng);
       }
       sprintf(logtxt,"Transmitting on: %d (Noise=%g)",tfreq,noise);
       ErrLog(errlog.sock,progname,logtxt);
@@ -455,18 +421,11 @@ int main(int argc,char *argv[]) {
 
       if (exitpoll !=0) break;
       scan=0;
-      if (bmnum==ebm) break;
-      if (backward) bmnum--;
-      else bmnum++;
-
-      if (bm_sync==1){
-        ErrLog(errlog.sock,progname,"Syncing to beam timing");
-        SiteEndScan(bmsc,bmus);
-      }
+      skip++;
+      if (skip==num_sounds) break;
 
     } while (1);
 
-    bmnum=sbm;
     ErrLog(errlog.sock,progname,"Waiting for scan boundary.");
     if ((exitpoll==0) && (scannowait==0)) SiteEndScan(scnsc,scnus);
   } while (exitpoll==0);

@@ -1,30 +1,10 @@
-/* normalscan.c
+/* pcodescan.c
    ============
-   Author: R.J.Barnes & J.Spaleta
+   Author: J.Spaleta & R.J.Barnes
 */
 
 /*
- LICENSE AND DISCLAIMER
-
- Copyright (c) 2012 The Johns Hopkins University/Applied Physics Laboratory
-
- This file is part of the Radar Software Toolkit (RST).
-
- RST is free software: you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- any later version.
-
- RST is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public License
- along with RST.  If not, see <http://www.gnu.org/licenses/>.
-
-
-
+ ${license}
 */
 
 
@@ -67,8 +47,6 @@
 #include "site.h"
 #include "sitebuild.h"
 #include "siteglobal.h"
-#include "rosmsg.h"
-#include "tsg.h"
 
 char *ststr=NULL;
 char *dfststr="tst";
@@ -76,7 +54,9 @@ char *dfststr="tst";
 void *tmpbuf;
 size_t tmpsze;
 
-char progid[80]={"normalscan"};
+
+
+char progid[80]={"pcodescan"};
 char progname[256];
 
 int arg=0;
@@ -96,12 +76,20 @@ struct TCPIPMsgHost task[4]={
   {"127.0.0.1",1,-1}, /* iqwrite */
   {"127.0.0.1",2,-1}, /* rawacfwrite */
   {"127.0.0.1",3,-1}, /* fitacfwrite */
-  {"127.0.0.1",4,-1}  /* rtserver */
+  {"127.0.0.1",4,-1} /* rtserver */
 };
 
 int main(int argc,char *argv[]) {
 
   int ptab[8] = {0,14,22,24,27,31,42,43};
+  int *bcode;
+  int bcode2[2]={1,-1};
+  int bcode3[3]={1,1,-1};
+  int bcode4[4]={1,1,-1,1};
+  int bcode5[5]={1,1,1,-1,1};
+  int bcode7[7]={1,1,1,-1,-1,1,-1};
+  int bcode11[11]={1,1,1,-1,-1,-1,1,-1,-1,1,-1};
+  int bcode13[13]={1,1,1,1,1,-1,-1,1,1,-1,1,-1,1};
 
   int lags[LAG_SIZE][2] = {
     { 0, 0},		/*  0 */
@@ -136,7 +124,6 @@ int main(int argc,char *argv[]) {
 
   int exitpoll=0;
   int scannowait=0;
-
   int scnsc=120;
   int scnus=0;
   int skip;
@@ -145,7 +132,7 @@ int main(int argc,char *argv[]) {
   unsigned char fast=0;
   unsigned char discretion=0;
 
-  int status=0,n;
+  int status=0,n,i;
 
   int beams=0;
   int total_scan_usecs=0;
@@ -156,35 +143,20 @@ int main(int argc,char *argv[]) {
 
   /* Flag and variables to better sync beam soundings */
   int bm_sync=0;
-  int bmsc=6;
+  int bmsc=0;
   int bmus=0;
 
-
-  printf("Size of int %d\n",(int)sizeof(int));
-  printf("Size of long %d\n",(int)sizeof(long));
-  printf("Size of long long %d\n",(int)sizeof(long long));
-  printf("Size of struct TRTimes %d\n",(int)sizeof(struct TRTimes));
-  printf("Size of struct SeqPRM %d\n",(int)sizeof(struct SeqPRM));
-  printf("Size of struct RosData %d\n",(int)sizeof(struct RosData));
-  printf("Size of struct DataPRM %d\n",(int)sizeof(struct DataPRM));
-  printf("Size of Struct ControlPRM  %d\n",(int)sizeof(struct ControlPRM));
-  printf("Size of Struct RadarPRM  %d\n",(int)sizeof(struct RadarPRM));
-  printf("Size of Struct ROSMsg  %d\n",(int)sizeof(struct ROSMsg));
-  printf("Size of Struct CLRFreq  %d\n",(int)sizeof(struct CLRFreqPRM));
-  printf("Size of Struct TSGprm  %d\n",(int)sizeof(struct TSGprm));
-  printf("Size of Struct SiteSettings  %d\n",(int)sizeof(struct SiteSettings));
-
-  cp=150;
-  intsc=7; /* Set default integration time for normalscan (slow) */
-  intus=0; /* Integration time is dynamically calculated below based on the numbuer of beams. */
+  cp=999;
+  intsc=7;
+  intus=0;
   mppul=8;
   mplgs=23;
-  mpinc=1500;
-  dmpinc=1500;
-  nrang=100;
-  rsep=45;
-  txpl=300;
+  mpinc=1560;
+  nrang=565;
+  rsep=6;
+  nbaud=13;
 
+  debug=0;
   /* ========= PROCESS COMMAND LINE ARGUMENTS ============= */
 
   OptionAdd(&opt,"di",'x',&discretion);
@@ -195,10 +167,16 @@ int main(int argc,char *argv[]) {
 
   OptionAdd( &opt, "dt", 'i', &day);
   OptionAdd( &opt, "nt", 'i', &night);
+  OptionAdd( &opt, "sf", 'i', &stfrq);
   OptionAdd( &opt, "df", 'i', &dfrq);
   OptionAdd( &opt, "nf", 'i', &nfrq);
   OptionAdd( &opt, "fixfrq", 'i', &fixfrq);
   OptionAdd( &opt, "xcf", 'i', &xcnt);
+  OptionAdd( &opt, "baud", 'i', &nbaud);
+  OptionAdd( &opt, "tau", 'i', &mpinc);
+/*  OptionAdd( &opt, "rangeres", 'i', &rsep);  Duplicated with above */
+/*  OptionAdd( &opt, "ranges", 'i', &nrang); */
+
 
   OptionAdd(&opt,"ep",'i',&errlog.port);
   OptionAdd(&opt,"sp",'i',&shell.port);
@@ -210,16 +188,16 @@ int main(int argc,char *argv[]) {
   OptionAdd(&opt,"stid",'t',&ststr);
 
   OptionAdd(&opt,"fast",'x',&fast);
+  OptionAdd(&opt,"nowait",'x',&scannowait);
 
-  OptionAdd( &opt, "nowait", 'x', &scannowait);
+  /* Command line options to change start and end beams */
   OptionAdd(&opt,"sb",'i',&sbm);
   OptionAdd(&opt,"eb",'i',&ebm);
-  OptionAdd(&opt,"c",'i',&cnum);  /* Unsure of where this comes in as not used elsewhere */
-
+  /* Command line options for changing integration time */
   OptionAdd(&opt,"intsc",'i',&intsc);
   OptionAdd(&opt,"intus",'i',&intus);
   OptionAdd(&opt,"setintt",'x',&setintt);
-
+  /* Commnad line options for syncing beam soundings */
   OptionAdd(&opt,"bm_sync",'x',&bm_sync);
   OptionAdd(&opt,"bmsc",'i',&bmsc);
   OptionAdd(&opt,"bmus",'i',&bmus);
@@ -232,6 +210,20 @@ int main(int argc,char *argv[]) {
   if (roshost==NULL) roshost=getenv("ROSHOST");
   if (roshost==NULL) roshost=droshost;
 
+  if(nbaud==2) bcode=bcode2;
+  if(nbaud==3) bcode=bcode3;
+  if(nbaud==4) bcode=bcode4;
+  if(nbaud==5) bcode=bcode5;
+  if(nbaud==7) bcode=bcode7;
+  if(nbaud==11) bcode=bcode11;
+  if(nbaud==13) bcode=bcode13;
+  pcode=(int *)malloc((size_t)sizeof(int)*mppul*nbaud);
+  for(i=0;i<mppul;i++){
+    for(n=0;n<nbaud;n++){
+      pcode[i*nbaud+n]=bcode[n];
+    }
+  }
+
   if ((errlog.sock=TCPIPMsgOpen(errlog.host,errlog.port))==-1) {
     fprintf(stderr,"Error connecting to error log.\n");
   }
@@ -242,6 +234,8 @@ int main(int argc,char *argv[]) {
 
   for (n=0;n<tnum;n++) task[n].port+=baseport;
 
+
+  printf("Station String: %s\n",ststr);
   OpsStart(ststr);
 
   status=SiteBuild(ststr,NULL); /* second argument is version string */
@@ -252,89 +246,66 @@ int main(int argc,char *argv[]) {
   }
 
   SiteStart(roshost);
-  arg=OptionProcess(1,argc,argv,&opt,NULL);
-
-  printf("Station ID: %s  %d\n",ststr,stid);
-
 
   strncpy(combf,progid,80);
 
   OpsSetupCommand(argc,argv);
   OpsSetupShell();
 
-  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l intsc l intus l",
+  RadarShellParse(&rstable,"sbm l ebm l dfrq l nfrq l dfrang l nfrang l dmpinc l nmpinc l frqrng l xcnt l nbaud l rsep l nrang l",
                   &sbm,&ebm,
                   &dfrq,&nfrq,
                   &dfrang,&nfrang,
                   &dmpinc,&nmpinc,
-                  &frqrng,&xcnt,&intsc,&intus);
+                  &frqrng,&xcnt,&nbaud,&rsep,&nrang);
 
 
   status=SiteSetupRadar();
-
-  printf("Initial Setup Complete: Station ID: %s  %d\n",ststr,stid);
 
   if (status !=0) {
     ErrLog(errlog.sock,progname,"Error locating hardware.");
     exit (1);
   }
 
+
   if (fast) {
-    cp=151;
-    scnsc=60;
-    scnus=0;
-  } else {
-    scnsc=120;
-    scnus=0;
+     cp=151;
+     scnsc=60;
+     scnus=0;
+/*     intsc=3;
+     intus=500000; */
   }
-
   beams=abs(ebm-sbm)+1;
-  if ((scannowait==0) && (setintt==0)) {
-    total_scan_usecs=(scnsc-3)*1E6+scnus;
-    total_integration_usecs=total_scan_usecs/beams;
-    intsc=total_integration_usecs/1E6;
-    intus=total_integration_usecs -(intsc*1E6);
+  if(beams > 16) {
+    if ((scannowait==0) && (setintt==0)) {
+      total_scan_usecs=(scnsc-3)*1E6+scnus;
+      total_integration_usecs=total_scan_usecs/beams;
+      intsc=total_integration_usecs/1E6;
+      intus=total_integration_usecs -(intsc*1E6);
+    }
   }
-
   if (discretion) cp= -cp;
 
-  txpl=(rsep*20)/3;
+  txpl=(nbaud*rsep*20)/3;
 
-  if (fast) sprintf(progname,"normalscan (fast)");
-  else sprintf(progname,"normalscan");
-
-
+  if (fast) sprintf(progname,"pcodescan (fast)");
+  else sprintf(progname,"pcodescan");
 
   OpsLogStart(errlog.sock,progname,argc,argv);
 
   OpsSetupTask(tnum,task,errlog.sock,progname);
-
   for (n=0;n<tnum;n++) {
     RMsgSndReset(task[n].sock);
     RMsgSndOpen(task[n].sock,strlen( (char *) command),command);
   }
 
-  printf("Preparing OpsFitACFStart Station ID: %s  %d\n",ststr,stid);
 
   OpsFitACFStart();
 
-  printf("Preparing SiteTimeSeq Station ID: %s  %d\n",ststr,stid);
-
   tsgid=SiteTimeSeq(ptab);
 
-  skip=OpsFindSkip(scnsc,scnus);
-  if (backward) {
-      bmnum=sbm-skip-1; /* An extra one to ensure not overruning scan boundary */
-      if (bmnum<ebm) bmnum=sbm;
-  } else {
-      bmnum=sbm+skip+1; /* An extra one to ensure not overruning scan boundary */
-     if (bmnum>ebm) bmnum=sbm;
-  }
-
-  printf("Entering Scan loop Station ID: %s  %d\n",ststr,stid);
   do {
 
-    printf("Entering Site Start Scan Station ID: %s  %d\n",ststr,stid);
     if (SiteStartScan() !=0) continue;
 
     if (OpsReOpen(2,0,0) !=0) {
@@ -357,17 +328,27 @@ int main(int argc,char *argv[]) {
       } else xcf=0;
     } else xcf=0;
 
+    skip=OpsFindSkip(scnsc,scnus);
+
+    if (backward) {
+      bmnum=sbm-skip;
+      if (bmnum<ebm) bmnum=sbm;
+    } else {
+      bmnum=sbm+skip;
+      if (bmnum>ebm) bmnum=sbm;
+    }
+
     do {
 
       TimeReadClock(&yr,&mo,&dy,&hr,&mt,&sc,&us);
 
       if (OpsDayNight()==1) {
         stfrq=dfrq;
-        mpinc=dmpinc;
+        /*mpinc=dmpinc;*/
         frang=dfrang;
       } else {
         stfrq=nfrq;
-        mpinc=nmpinc;
+        /*mpinc=nmpinc;*/
         frang=nfrang;
       }
       if(fixfrq>0) {
@@ -375,13 +356,13 @@ int main(int argc,char *argv[]) {
         tfreq=fixfrq;
         noise=0;
       }
+
       sprintf(logtxt,"Integrating beam:%d intt:%ds.%dus (%d:%d:%d:%d)",bmnum,
                       intsc,intus,hr,mt,sc,us);
       ErrLog(errlog.sock,progname,logtxt);
 
       ErrLog(errlog.sock,progname,"Starting Integration.");
 
-    printf("Entering Site Start Intt Station ID: %s  %d\n",ststr,stid);
       SiteStartIntt(intsc,intus);
 
       ErrLog(errlog.sock,progname,"Doing clear frequency search.");
@@ -389,13 +370,15 @@ int main(int argc,char *argv[]) {
       sprintf(logtxt, "FRQ: %d %d", stfrq, frqrng);
       ErrLog(errlog.sock,progname, logtxt);
 
+
+      printf("FRQ: %d %d", stfrq, frqrng);
       tfreq=SiteFCLR(stfrq,stfrq+frqrng);
       if (!(fixfrq<0)){
-        ErrLog(errlog.sock,progname,"Fixing frequency");
         tfreq=fixfrq;
       }
       sprintf(logtxt,"Transmitting on: %d (Noise=%g)",tfreq,noise);
       ErrLog(errlog.sock,progname,logtxt);
+
 
       nave=SiteIntegrate(lags);
       if (nave<0) {
@@ -414,12 +397,14 @@ int main(int argc,char *argv[]) {
 
       FitACF(prm,raw,fblk,fit);
 
+      /* write out data here */
+
       msg.num=0;
       msg.tsize=0;
 
       tmpbuf=RadarParmFlatten(prm,&tmpsze);
       RMsgSndAdd(&msg,tmpsze,tmpbuf,
-		PRM_TYPE,0);
+		 PRM_TYPE,0);
 
       tmpbuf=IQFlatten(iq,prm->nave,&tmpsze);
       RMsgSndAdd(&msg,tmpsze,tmpbuf,IQ_TYPE,0);
@@ -428,7 +413,7 @@ int main(int argc,char *argv[]) {
                  (unsigned char *) badtr,BADTR_TYPE,0);
 
       RMsgSndAdd(&msg,strlen(sharedmemory)+1,(unsigned char *) sharedmemory,
-		 IQS_TYPE,0);
+                 IQS_TYPE,0);
 
       tmpbuf=RawFlatten(raw,prm->nrang,prm->mplgs,&tmpsze);
       RMsgSndAdd(&msg,tmpsze,tmpbuf,RAW_TYPE,0);
@@ -438,7 +423,7 @@ int main(int argc,char *argv[]) {
 
 
       RMsgSndAdd(&msg,strlen(progname)+1,(unsigned char *) progname,
-		NME_TYPE,0);
+		 NME_TYPE,0);
 
 
 
@@ -466,9 +451,10 @@ int main(int argc,char *argv[]) {
 
     } while (1);
 
-    bmnum=sbm;
     ErrLog(errlog.sock,progname,"Waiting for scan boundary.");
+
     if ((exitpoll==0) && (scannowait==0)) SiteEndScan(scnsc,scnus);
+
   } while (exitpoll==0);
 
 
