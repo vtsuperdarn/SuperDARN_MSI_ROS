@@ -60,7 +60,7 @@ char *dfststr="tst";
 void *tmpbuf;
 size_t tmpsze;
 
-char progid[80]={"normalsound"};
+char progid[80]={"normalsound 2022/10/17"};
 char progname[256];
 
 int arg=0;
@@ -123,7 +123,8 @@ int main(int argc,char *argv[])
   int skip;
   int cnt=0;
 
-  unsigned char fast=0;
+  unsigned char fast=1;
+  unsigned char slow=0;
   unsigned char discretion=0;
   int fixfrq=0;
 
@@ -213,6 +214,7 @@ int main(int argc,char *argv[])
   OptionAdd(&opt, "bp",     'i', &baseport);
   OptionAdd(&opt, "stid",   't', &ststr);
   OptionAdd(&opt, "fast",   'x', &fast);
+  OptionAdd(&opt, "slow",   'x', &slow);
   OptionAdd(&opt, "sb",     'i', &sbm);
   OptionAdd(&opt, "eb",     'i', &ebm);
   OptionAdd(&opt, "ros",    't', &roshost);    /* Change the roshost location? */
@@ -258,8 +260,10 @@ int main(int argc,char *argv[])
   snd_dir = getenv("SD_SND_PATH");
   if (snd_dir == NULL)
     sprintf(data_path,"/data/ros/snd/");
-  else
+  else {
     memcpy(data_path,snd_dir,strlen(snd_dir));
+    data_path[strlen(snd_dir)] = 0;
+  }
 
   sprintf(snd_filename,"%s/sounder_%s.dat", data_path, ststr);
   fprintf(stderr,"Checking Sounder File: %s\n",snd_filename);
@@ -317,6 +321,8 @@ int main(int argc,char *argv[])
     ErrLog(errlog.sock,progname,"Error locating hardware.");
     exit (1);
   }
+
+  if (slow) fast = 0;
 
   beams=abs(ebm-sbm)+1;
   if (fast) {
@@ -492,7 +498,7 @@ int main(int argc,char *argv[])
     scan = -2;
 
     /* set the xcf variable to do cross-correlations (AOA) */
-    /* xcf = 1; FHR cannot do xcf collection -KTS 20211026 */
+    xcf = 0; /* FHR cannot collect xcf data -KTS 20211026 */
 
     /* set the sounding mode integration time and number of ranges */
     intsc = snd_intt_sc;
@@ -550,22 +556,8 @@ int main(int argc,char *argv[])
       tmpbuf=RadarParmFlatten(prm,&tmpsze);
       RMsgSndAdd(&msg,tmpsze,tmpbuf,PRM_TYPE,0);
 
-      tmpbuf=IQFlatten(iq,prm->nave,&tmpsze);
-      RMsgSndAdd(&msg,tmpsze,tmpbuf,IQ_TYPE,0);
-
-      RMsgSndAdd(&msg,sizeof(unsigned int)*2*iq->tbadtr,
-             (unsigned char *) badtr,BADTR_TYPE,0);
-
-      RMsgSndAdd(&msg,strlen(sharedmemory)+1,
-             (unsigned char *) sharedmemory,IQS_TYPE,0);
-
-      tmpbuf=RawFlatten(raw,prm->nrang,prm->mplgs,&tmpsze);
-      RMsgSndAdd(&msg,tmpsze,tmpbuf,RAW_TYPE,0);
-
       tmpbuf=FitFlatten(fit,prm->nrang,&tmpsze);
       RMsgSndAdd(&msg,tmpsze,tmpbuf,FIT_TYPE,0);
-
-      RMsgSndAdd(&msg,strlen(progname)+1,(unsigned char *) progname,NME_TYPE,0);
 
       RMsgSndSend(task[RT_TASK].sock,&msg);
       for (n=0;n<msg.num;n++) {
