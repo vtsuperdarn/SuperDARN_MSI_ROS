@@ -1097,7 +1097,7 @@ usleep(usecs);
       nave++;
       iqoff=iqsze;  /* set the offset bytes for the next sequence */
 
-    } else {
+    } else {  /* Empty else section, can this be removed? */
     }
     gettimeofday(&tick,NULL);
     if(f_diagnostic_ascii!=NULL) fprintf(f_diagnostic_ascii,"Sequence: END\n");
